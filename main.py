@@ -16,7 +16,6 @@ class Board:
         assert (size > 1)
         
         self.rows: list[list[Nod]] = []
-        print(len(self.rows))
         for i in range(size):
             self.rows.append([])
             for j in range(i+1):
@@ -26,8 +25,11 @@ class Board:
                 if(i == size-1): s.add('C')
                 
                 n = Nod(s)
-                if(i > j): n.add_neighbor(self.rows[i-1][j])
-                if(j > 0): n.add_neighbor(self.rows[i][j-1])
+                if(i > j):
+                    n.add_neighbor(self.rows[i-1][j])
+                if(j > 0):
+                    n.add_neighbor(self.rows[i][j-1])
+                    n.add_neighbor(self.rows[i-1][j-1])
                 self.rows[i].append(n)
 
 if __name__ == '__main__':
