@@ -7,3 +7,5 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 The purpose of this project is to develop a full-stack web application for a game named YOVI, communicating human players and automated agents. The following specifications must be in the final version of the aplication:
 
+==== User Management
+[cols="1,4"]
