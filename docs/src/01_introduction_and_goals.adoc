@@ -11,4 +11,6 @@ The purpose of this project is to develop a full-stack web application for a gam
 [cols="1,4"]
 |===
 | ID | Description
+| FR-01
+| The system must allow users to register and authenticate (login/logout) to manage their personal  profiles.
 |===
