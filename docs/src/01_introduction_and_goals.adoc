@@ -13,4 +13,8 @@ The purpose of this project is to develop a full-stack web application for a gam
 | ID | Description
 | FR-01
 | The system must allow users to register and authenticate (login/logout) to manage their personal  profiles.
+| FR-02
+| The system must maintain a persistent history of matches played by each registered user.
+| FR-03
+| The system must provide a profile for users to view their statistics, including win/loss ratios and total games played.
 |===
