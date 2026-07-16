@@ -9,3 +9,6 @@ The purpose of this project is to develop a full-stack web application for a gam
 
 ==== User Management
 [cols="1,4"]
+|===
+| ID | Description
+|===
