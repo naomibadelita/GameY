@@ -1,0 +1,8 @@
+{
+    
+    "sonarlint.connectedMode.project": {
+        "connectionId": "my-sonarcloud",
+        "projectKey": "naomibadelita_GameY"
+    }
+
+}
