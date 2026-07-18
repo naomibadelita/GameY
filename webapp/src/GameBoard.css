@@ -1,0 +1,83 @@
+/* Game main container */
+.game-board-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 20px;
+}
+
+/* Title with who is next */
+.game-board-container h3 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+/* The board which holds the cells */
+.board-grid {
+    display: flex;
+    flex-direction: column;
+    background-color: #8d1212;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 40px 40px 40px 40px;
+    clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+}
+
+/* Row of cells */
+.board-row {
+    display: flex;
+    justify-content: center; /* Centers each row to build the triangle symmetry */
+    gap: 4px; /* Slight horizontal spacing between adjacent hexagons */
+    margin-top: -12px; /* Pulls rows upwards to perfectly interlock into the gaps */
+}
+
+/* Fixes the top spacing for the very first row */
+.board-row:first-child {
+    margin-top: 0;
+}
+
+/* Base style for each cell */
+.hex-cell {
+    width: 50px;
+    height: 56px; /* Slightly taller than wide makes the hexagon look regular */
+    font-size: 11px;
+    color: #fff;
+    border: none; /* Borders don't work well with clip-path, color handles separation */
+    background-color: #131313;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    /* Creates a perfect pointy-topped hexagon shape */
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+/* visual effect when you hover the cell */
+.hex-cell:hover:not(.cell-p1):not(.cell-p2) {
+    background-color: #444;
+    transform: scale(1.08);
+    z-index: 10; /* Ensures the hovered cell stays on top visually */
+}
+
+/* When the cell is empty */
+.cell-empty {
+    background-color: #2e2b2b;
+}
+
+/* Player 1 */
+.cell-p1 {
+    background-color: #3b82f6;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+/* Player 2 */
+.cell-p2 {
+    background-color: #ef4444;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+/* The animation is stopped if the button is occupied */
+.cell-p1, .cell-p2 {
+    cursor: not-allowed;
+}
