@@ -1,12 +1,1 @@
-<?xml version="1.0" encoding="utf-8"?>
-<testsuites name="pytest tests">
-    <testsuite name="pytest" errors="0" failures="0" skipped="0" tests="5" time="0.142"
-        timestamp="2026-07-18T09:09:57.559873+03:00" hostname="Laptop-Bogdan">
-        <testcase classname="tests.test_board.TestBoard" name="test_multiple_piece_placement"
-            time="0.002" />
-        <testcase classname="tests.test_board.TestBoard" name="test_game_winning_1" time="0.001" />
-        <testcase classname="tests.test_board.TestBoard" name="test_game_winning_2" time="0.002" />
-        <testcase classname="tests.test_board.TestBoard" name="test_game_winning_3" time="0.001" />
-        <testcase classname="tests.test_board.TestBoard" name="test_game_winning_4" time="0.002" />
-    </testsuite>
-</testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="5" time="0.185" timestamp="2026-07-18T12:00:37.757113+03:00" hostname="Laptop-Bogdan"><testcase classname="tests.test_board.TestBoard" name="test_multiple_piece_placement" time="0.003" /><testcase classname="tests.test_board.TestBoard" name="test_game_winning_1" time="0.002" /><testcase classname="tests.test_board.TestBoard" name="test_game_winning_2" time="0.001" /><testcase classname="tests.test_board.TestBoard" name="test_game_winning_3" time="0.001" /><testcase classname="tests.test_board.TestBoard" name="test_game_winning_4" time="0.002" /></testsuite></testsuites>
