@@ -4,7 +4,7 @@ import { type CellValue } from './types/game';
 import './GameBoard.css';
 
 interface GameBoardProps {
-  readonly boardSize: number;
+    readonly boardSize: number;
 }
 
 export default function GameBoard({ boardSize }: GameBoardProps) {
@@ -22,16 +22,15 @@ export default function GameBoard({ boardSize }: GameBoardProps) {
         setP1Turn(!isP1Turn);
     };
 
-    const renderBoard= () => {
-        const rows=[];
+    const renderBoard = () => {
+        const rows = [];
 
-        for(let y=0; y<boardSize; y++)
-        {
-            const rowCells=[];
-            const row=board[y];
+        for (let y = 0; y < boardSize; y++) {
+            const rowCells = [];
+            const row = board[y];
 
-            for(let x=0; x<=y;x++){
-                const cell=row[x];
+            for (let x = 0; x <= y; x++) {
+                const cell = row[x];
 
                 let cellClass = 'cell-empty';
                 if (cell === 'B') {
@@ -46,7 +45,6 @@ export default function GameBoard({ boardSize }: GameBoardProps) {
                         className={`hex-cell ${cellClass}`}
                         onClick={() => handleCellClick(y, x)}
                     >
-                        {y},{x}
                     </button>
                 );
             }
@@ -58,14 +56,27 @@ export default function GameBoard({ boardSize }: GameBoardProps) {
             );
         }
 
-            return rows;
-        };
+        return rows;
+    };
 
     return (
         <div className="game-board-container">
             <h3>Rândul: {isP1Turn ? 'Jucător 1 (Albastru - B)' : 'Jucător 2 (Roșu - R)'}</h3>
-            <div className="board-grid">
-                {renderBoard()}
+            
+            <div className="board-relative">
+                
+                <svg className="board-svg-bg" preserveAspectRatio="none" viewBox="0 0 100 100">
+                    <path 
+                        d="M50,4 L96,91 A5,5 0 0,1 91,97 L9,97 A5,5 0 0,1 4,91 Z" 
+                        fill="#4c4848" 
+                        stroke="#3d3737" 
+                        strokeWidth="0.5" 
+                    />
+                </svg>
+
+                <div className="board-grid">
+                    {renderBoard()}
+                </div>
             </div>
         </div>
     );

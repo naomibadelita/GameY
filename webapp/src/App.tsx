@@ -1,4 +1,4 @@
-import { useState } from 'react'
+//import { useState } from 'react'
 import './App.css'
 import GameBoard from './GameBoard';
 
@@ -7,7 +7,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <h1>Game Hex</h1>
+      <h1>Game Y</h1>
       <GameBoard boardSize={defaultBoardSize} />
     </div>
   );
