@@ -1,8 +1,9 @@
 import pytest
 from gamey.board import Board, MoveResult
 
-# Use `python -m pytest tests/board_tests.py::TestBoard `
+# Use `python -m pytest tests/test_board.py::TestBoard `
 # to run the test in terminal.
+# Or `python -m pytest` to run all test files.
 
 class TestBoard:
     @pytest.fixture
