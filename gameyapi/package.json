@@ -1,0 +1,13 @@
+{
+  "name": "gameyapi",
+  "version": "1.0.0",
+  "description": "Backend API layer to check game Y",
+  "main": "gamey-service.js",
+  "type": "module",
+  "scripts": {
+    "start": "node gamey-service.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
