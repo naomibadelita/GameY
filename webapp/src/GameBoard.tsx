@@ -27,7 +27,7 @@ export default function GameBoard({ boardSize }: GameBoardProps) {
 
         const newBoard = board.map(row => [...row]);
         newBoard[y][x] = color;
-        setBoard(newBoard);
+        setBoard(newBoard); 
 
         if (result === MoveResult.VICTORY) {
             setWinner(color);

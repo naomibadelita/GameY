@@ -9,5 +9,5 @@ export function createInitialBoard(size: number): CellValue[][]{
         board.push(row);
     }
 
-    return board;
+    return board; 
 }

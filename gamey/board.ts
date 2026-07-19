@@ -22,7 +22,7 @@ export class Node {
     }
 
     private getSameColorNeighbors(): Node[] {
-        return this.neighbors.filter((v) => v.color == this.color)
+        return this.neighbors.filter((v) => v.color === this.color)
     }
 
     private spreadToNeighbors(neighbors: Node[]) {
