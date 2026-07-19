@@ -1,0 +1,69 @@
+openapi: 3.0.3
+info:
+  title: Game Y Validation API
+  version: 1.0.0
+  description: API to check the gamey rules.
+servers:
+  - url: http://localhost:8080
+    description: local API server
+
+tags:
+  - name: Game
+    description: Lifecycle and moves check
+
+paths:
+  /game/start:
+    get:
+      tags:
+        - Game
+      summary: Initialize a new game and return an empty board
+      responses:
+        '200':
+          description: Game started successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Initial game state.
+
+  /game/move:
+    post:
+      tags:
+        - Game
+      summary: Send a move validated by the game rules
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - row
+                - col
+                - player
+              properties:
+                row:
+                  type: integer
+                  description: The row for the move
+                col:
+                  type: integer
+                  description: The column for the move
+                player:
+                  type: string
+                  description: Player identifier
+      responses:
+        '200':
+          description: Valid move, return the board and the status (if someone won)
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Invalid move (position already occupied).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
