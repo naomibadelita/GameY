@@ -1,6 +1,7 @@
 import { useState } from 'react'; 
 import { createInitialBoard } from './utils/geoHelpers';
 import { type CellValue } from './types/game';
+import { Board, MoveResult } from '../../gamey/Board';
 import './GameBoard.css';
 
 interface GameBoardProps {
@@ -8,17 +9,31 @@ interface GameBoardProps {
 }
 
 export default function GameBoard({ boardSize }: GameBoardProps) {
+    const [engine] = useState<Board>(() => new Board(boardSize));
     const [board, setBoard] = useState<CellValue[][]>(createInitialBoard(boardSize));
     const [isP1Turn, setP1Turn] = useState<boolean>(true);
+    const [winner, setWinner] = useState<CellValue | null>(null);
 
     const handleCellClick = (y: number, x: number) => {
-        if (board[y][x] !== '.') {
+        if (winner !== null || board[y][x] !== '.') {
+            return;
+        }
+
+        const color: CellValue = isP1Turn ? 'B' : 'R';
+        const result = engine.placePiece(y, x, color);
+        if (result === MoveResult.OCCUPIED) {
             return;
         }
 
         const newBoard = board.map(row => [...row]);
-        newBoard[y][x] = isP1Turn ? 'B' : 'R';
+        newBoard[y][x] = color;
         setBoard(newBoard);
+
+        if (result === MoveResult.VICTORY) {
+            setWinner(color);
+            return;
+        }
+
         setP1Turn(!isP1Turn);
     };
 
@@ -61,7 +76,11 @@ export default function GameBoard({ boardSize }: GameBoardProps) {
 
     return (
         <div className="game-board-container">
-            <h3>Rândul: {isP1Turn ? 'Jucător 1 (Albastru - B)' : 'Jucător 2 (Roșu - R)'}</h3>
+            <h3>
+                {winner !== null
+                    ? `Câștigător: ${winner === 'B' ? 'Jucător 1 (Albastru - B)' : 'Jucător 2 (Roșu - R)'}`
+                    : `Rândul: ${isP1Turn ? 'Jucător 1 (Albastru - B)' : 'Jucător 2 (Roșu - R)'}`}
+            </h3>
             
             <div className="board-relative">
                 

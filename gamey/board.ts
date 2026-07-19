@@ -1,17 +1,20 @@
-export enum MoveResult {
-    SUCCESS = 0,
-    OCCUPIED = 1,
-    VICTORY = 2,
-}
+export const MoveResult = {
+    SUCCESS: 0,
+    OCCUPIED: 1,
+    VICTORY: 2,
+};
+
+export type MoveResult = typeof MoveResult[keyof typeof MoveResult];
 
 const target = new Set<string>(['A', 'B', 'C']);
 
 export class Node {
     color: string = '';
     neighbors: Node[] = []
-    public constructor(
-        public sides: Set<string>,
-    ) { }
+    sides: Set<string>
+    public constructor(sides: Set<string>) {
+        this.sides = sides
+    }
 
     public addNeighbor(node: Node) {
         this.neighbors.push(node)
