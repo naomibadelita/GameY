@@ -10,7 +10,7 @@ export class Node {
     color: string = '';
     neighbors: Node[] = []
     public constructor(
-        public sides: Set<String>,
+        public sides: Set<string>,
     ) { }
 
     public addNeighbor(node: Node) {
@@ -24,8 +24,8 @@ export class Node {
 
     private spreadToNeighbors(neighbors: Node[]) {
         for (const v of neighbors) {
-            if ([...v.sides].every((side) => this.sides.has(side))) {
-                v.sides = new Set<String>([...v.sides, ...this.sides])
+            if ([...this.sides].some(side => !v.sides.has(side))) {
+                v.sides = new Set<string>([...v.sides, ...this.sides])
                 const otherNeighbors = v.getSameColorNeighbors()
                     .filter(vv => vv !== this)
                 v.spreadToNeighbors(otherNeighbors)
@@ -36,7 +36,7 @@ export class Node {
     private recalculateConnectedSides() {
         const neighbors = this.getSameColorNeighbors()
         for (const v of neighbors) {
-            this.sides = new Set<String>([...this.sides, ...v.sides])
+            this.sides = new Set<string>([...this.sides, ...v.sides])
         }
         this.spreadToNeighbors(neighbors)
     }
@@ -50,14 +50,13 @@ export class Node {
 export class Board {
     rows: Node[][] = []
     public constructor(size: number) {
-        if (size <= 1) throw new Error();
+        if (size <= 1) {
+            throw new Error("A board should be instantiated with a size > 1!");
+        }
 
         for (let i = 0; i < size; ++i) {
             this.rows.push([])
             for (let j = 0; j <= i; ++j) {
-                // const s = new Set<string>([
-                //     ...(j == 0 ? ['A'] : [])
-                // ])
                 const s = new Set<string>()
                 if (j == 0) s.add('A');
                 if (i == j) s.add('B');
