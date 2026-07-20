@@ -7,7 +7,7 @@ function App() {
 
   return (
     <div className="app-container">
-      <h1>Game Y</h1> 
+      <h1>Game Y</h1>
       <GameBoard boardSize={defaultBoardSize} />
     </div>
   );
