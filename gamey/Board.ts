@@ -90,4 +90,3 @@ export class Board {
         return MoveResult.SUCCESS
     }
 }
-
