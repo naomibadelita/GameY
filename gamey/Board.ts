@@ -52,6 +52,25 @@ export class Node {
 
 export class Board {
     rows: Node[][] = []
+
+    private createNode(i: number, j: number, size: number): Node {
+        const s = new Set<string>()
+        if (j == 0) s.add('A');
+        if (i == j) s.add('B');
+        if (i == size - 1) s.add('C');
+
+        const n = new Node(s);
+        if (i > j) {
+            n.addNeighbor(this.rows[i - 1][j]);
+        }
+        if (j > 0) {
+            n.addNeighbor(this.rows[i][j - 1]);
+            n.addNeighbor(this.rows[i - 1][j - 1]);
+        }
+
+        return n;
+    }
+
     public constructor(size: number) {
         if (size <= 1) {
             throw new Error("A board should be instantiated with a size > 1!");
@@ -60,19 +79,7 @@ export class Board {
         for (let i = 0; i < size; ++i) {
             this.rows.push([])
             for (let j = 0; j <= i; ++j) {
-                const s = new Set<string>()
-                if (j == 0) s.add('A');
-                if (i == j) s.add('B');
-                if (i == size - 1) s.add('C');
-
-                const n = new Node(s)
-                if (i > j) {
-                    n.addNeighbor(this.rows[i - 1][j]);
-                }
-                if (j > 0) {
-                    n.addNeighbor(this.rows[i][j - 1]);
-                    n.addNeighbor(this.rows[i - 1][j - 1]);
-                }
+                const n = this.createNode(i, j, size);
                 this.rows[i].push(n)
             }
         }
