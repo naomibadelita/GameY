@@ -9,7 +9,7 @@ export type MoveResult = typeof MoveResult[keyof typeof MoveResult];
 const target = new Set<string>(['A', 'B', 'C']);
 
 export class Node {
-    color: string = '';
+    color: string = '.';
     neighbors: Node[] = []
     sides: Set<string>
     public constructor(sides: Set<string>) {
@@ -87,7 +87,7 @@ export class Board {
 
     public placePiece(i: number, j: number, color: string): MoveResult {
         const node = this.rows[i][j]
-        if (node.color !== '') {
+        if (node.color !== '.') {
             return MoveResult.OCCUPIED
         }
         node.setColor(color)
