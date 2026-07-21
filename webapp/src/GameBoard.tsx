@@ -1,19 +1,9 @@
 import { useState } from 'react';
 import { Board, MoveResult } from '../../gamey/Board';
 import './GameBoard.css';
-
-type CellValue = '.' | 'B' | 'R';
-
-function createInitialBoard(size: number): CellValue[][] {
-    const board: CellValue[][] = [];
-
-    for (let y = 0; y < size; y++) {
-        const row: CellValue[] = new Array(y + 1).fill('.');
-        board.push(row);
-    }
-
-    return board;
-}
+import { type CellValue } from './CellValue';
+import { boardAtom, isP1TurnAtom, winnerAtom } from './Atoms';
+import { useAtom } from 'jotai'
 
 interface GameBoardProps {
     readonly boardSize: number;
@@ -21,12 +11,12 @@ interface GameBoardProps {
 
 export default function GameBoard({ boardSize }: GameBoardProps) {
     const [engine] = useState<Board>(() => new Board(boardSize));
-    const [board, setBoard] = useState<CellValue[][]>(createInitialBoard(boardSize));
-    const [isP1Turn, setP1Turn] = useState<boolean>(true);
-    const [winner, setWinner] = useState<CellValue | null>(null);
+    const [board, setBoard] = useAtom(boardAtom);
+    const [isP1Turn, setP1Turn] = useAtom(isP1TurnAtom);
+    const [winner, setWinner] = useAtom(winnerAtom);
 
     const handleCellClick = (y: number, x: number) => {
-        if (winner !== null || board[y][x] !== '.') {
+        if (winner !== '.' || board[y][x] !== '.') {
             return;
         }
 
@@ -93,7 +83,7 @@ export default function GameBoard({ boardSize }: GameBoardProps) {
         ? 'Jucător 1 (Albastru - B)'
         : 'Jucător 2 (Roșu - R)';
 
-    const header_text = winner !== null
+    const header_text = winner !== '.'
         ? `Câștigător: ${winner_text}`
         : `Rândul: ${turn_text}`;
 
