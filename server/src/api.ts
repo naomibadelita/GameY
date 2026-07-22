@@ -1,7 +1,7 @@
-export type CellValue = '.' | 'B' | 'R';
-export type BoardState = CellValue[][];
+import type { BoardState } from "../../shared/CellValue";
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+// const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+const API_BASE = 'http://localhost:3000';
 
 function handleResponse(response: Response) {
   if (!response.ok) {

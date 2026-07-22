@@ -1,23 +1,23 @@
-//import { useState } from 'react'
 import { useState } from 'react';
 import './App.css'
 import GameBoard from './GameBoard';
 import GameOver from './GameOver';
 
 function App() {
-    const defaultBoardSize = 8;
-    const [gameState, setGameState] = useState<'playing' | 'over'>('playing');
-    const [winner, setWinner] = useState<'B' | 'R' | null>(null);
+  const defaultBoardSize = 4;
+  const [gameState, setGameState] = useState<'playing' | 'over'>('playing');
+  const [winner, setWinner] = useState<'B' | 'R' | null>(null);
 
-    const handleGameOver = (winnerColor: 'B' | 'R') => {
-        setWinner(winnerColor);
-        setGameState('over');
-    };
+  const handleGameOver = (winnerColor: 'B' | 'R') => {
+    setWinner(winnerColor);
+    setGameState('over');
+  };
 
-    const handlePlayAgain = () => {
-        setGameState('playing');
-        setWinner(null);
-    };
+  const handlePlayAgain = () => {
+    setGameState('playing');
+    setWinner(null);
+    window.location.reload();
+  };
 
   return (
     <div className="app-container">

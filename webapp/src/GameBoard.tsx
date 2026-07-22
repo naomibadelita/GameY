@@ -1,19 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Board, MoveResult } from '../../gamey/Board';
+import { useEffect } from 'react';
 import './GameBoard.css';
-
-type CellValue = '.' | 'B' | 'R';
-
-function createInitialBoard(size: number): CellValue[][] {
-    const board: CellValue[][] = [];
-
-    for (let y = 0; y < size; y++) {
-        const row: CellValue[] = new Array(y + 1).fill('.');
-        board.push(row);
-    }
-
-    return board;
-}
+import { boardAtom, isP1TurnAtom, myColorAtom, winnerAtom } from './Atoms';
+import { useAtomValue } from 'jotai'
+import { ws } from './Connection';
 
 interface GameBoardProps {
     readonly boardSize: number;
@@ -21,10 +10,10 @@ interface GameBoardProps {
 }
 
 export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
-    const [engine] = useState<Board>(() => new Board(boardSize));
-    const [board, setBoard] = useState<CellValue[][]>(createInitialBoard(boardSize));
-    const [isP1Turn, setP1Turn] = useState<boolean>(true);
-    const [winner, setWinner] = useState<CellValue | null>(null);
+    const board = useAtomValue(boardAtom);
+    const isP1Turn = useAtomValue(isP1TurnAtom);
+    const winner = useAtomValue(winnerAtom);
+    const color = useAtomValue(myColorAtom);
 
     useEffect(() => {
         if (winner !== null && (winner === 'B' || winner === 'R')) {
@@ -33,26 +22,17 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
     }, [winner, onGameOver]);
 
     const handleCellClick = (y: number, x: number) => {
-        if (winner !== null || board[y][x] !== '.') {
+        if (winner !== '.' || board[y][x] !== '.') {
             return;
         }
-
-        const color: CellValue = isP1Turn ? 'B' : 'R';
-        const result = engine.placePiece(y, x, color);
-        if (result === MoveResult.OCCUPIED) {
-            return;
-        }
-
-        const newBoard = board.map(row => [...row]);
-        newBoard[y][x] = color;
-        setBoard(newBoard);
-
-        if (result === MoveResult.VICTORY) {
-            setWinner(color);
-            return;
-        }
-
-        setP1Turn(!isP1Turn);
+        const msg = JSON.stringify({
+            type: 'move',
+            x: x,
+            y: y,
+            color: color
+        });
+        console.log(`MSG: ${msg}`);
+        ws.send(msg);
     };
 
     const renderBoard = () => {
@@ -100,7 +80,7 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
         ? 'Jucător 1 (Albastru - B)'
         : 'Jucător 2 (Roșu - R)';
 
-    const header_text = winner !== null
+    const header_text = winner !== '.'
         ? `Câștigător: ${winner_text}`
         : `Rândul: ${turn_text}`;
 
