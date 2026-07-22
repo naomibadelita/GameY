@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Board, MoveResult } from '../../gamey/Board';
 import './GameBoard.css';
 
@@ -17,13 +17,20 @@ function createInitialBoard(size: number): CellValue[][] {
 
 interface GameBoardProps {
     readonly boardSize: number;
+    readonly onGameOver: (winner: 'B' | 'R') => void;
 }
 
-export default function GameBoard({ boardSize }: GameBoardProps) {
+export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
     const [engine] = useState<Board>(() => new Board(boardSize));
     const [board, setBoard] = useState<CellValue[][]>(createInitialBoard(boardSize));
     const [isP1Turn, setP1Turn] = useState<boolean>(true);
     const [winner, setWinner] = useState<CellValue | null>(null);
+
+    useEffect(() => {
+        if (winner !== null && (winner === 'B' || winner === 'R')) {
+            onGameOver(winner);
+        }
+    }, [winner, onGameOver]);
 
     const handleCellClick = (y: number, x: number) => {
         if (winner !== null || board[y][x] !== '.') {
