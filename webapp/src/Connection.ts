@@ -1,5 +1,5 @@
 import { getDefaultStore } from "jotai";
-import { type CellValue } from "./CellValue";
+import { type CellValue } from "../../shared/CellValue";
 import { boardAtom, isP1TurnAtom, winnerAtom, myColorAtom } from "./Atoms";
 
 const getWebSocketUrl = (): string => {
@@ -45,8 +45,7 @@ ws.onmessage = (ev) => {
             store.set(winnerAtom, data.winner);
             break;
 
-        case 'myColor':
-            console.log(`MY COLOR! ${data.myColor}`);
+        case 'init':
             if (store.get(myColorAtom) === '.') {
                 store.set(myColorAtom, data.myColor);
             }

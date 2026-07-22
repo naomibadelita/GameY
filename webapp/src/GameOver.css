@@ -1,0 +1,82 @@
+/* Game Over Full Page */
+.game-over-page {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.game-over-content {
+    text-align: center;
+    color: white;
+    animation: slideIn 0.5s ease-in-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.game-over-title {
+    font-size: 96px;
+    font-weight: bold;
+    margin: 0 0 30px 0;
+    color: #ffd700;
+    text-shadow: 3px 3px 12px rgba(0, 0, 0, 0.9);
+    letter-spacing: 5px;
+}
+
+.game-over-winner {
+    font-size: 36px;
+    margin: 0 0 50px 0;
+    color: #fff;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9);
+}
+
+.play-again-btn {
+    font-size: 20px;
+    padding: 15px 50px;
+    background-color: #ffd700;
+    color: #1a1a1a;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    box-shadow: 0 8px 16px rgba(255, 215, 0, 0.3);
+}
+
+.play-again-btn:hover {
+    background-color: #ffed4e;
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px rgba(255, 215, 0, 0.5);
+}
+
+.play-again-btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(255, 215, 0, 0.3);
+}

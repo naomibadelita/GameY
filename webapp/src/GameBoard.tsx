@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import './GameBoard.css';
 import { boardAtom, isP1TurnAtom, myColorAtom, winnerAtom } from './Atoms';
 import { useAtomValue } from 'jotai'
@@ -5,13 +6,20 @@ import { ws } from './Connection';
 
 interface GameBoardProps {
     readonly boardSize: number;
+    readonly onGameOver: (winner: 'B' | 'R') => void;
 }
 
-export default function GameBoard({ boardSize }: GameBoardProps) {
+export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
     const board = useAtomValue(boardAtom);
     const isP1Turn = useAtomValue(isP1TurnAtom);
     const winner = useAtomValue(winnerAtom);
     const color = useAtomValue(myColorAtom);
+
+    useEffect(() => {
+        if (winner !== null && (winner === 'B' || winner === 'R')) {
+            onGameOver(winner);
+        }
+    }, [winner, onGameOver]);
 
     const handleCellClick = (y: number, x: number) => {
         if (winner !== '.' || board[y][x] !== '.') {

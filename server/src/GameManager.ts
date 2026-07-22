@@ -1,14 +1,26 @@
 import { type WebSocket } from "ws";
 import { Board, MoveResult } from '../../gamey/Board';
 import { ISubscriber } from './Interfaces';
+import { type CellValue } from "../../shared/CellValue";
+
+class PlayerData {
+    ws: WebSocket;
+    color: CellValue;
+    constructor(ws: WebSocket, color: CellValue) {
+        this.ws = ws;
+        this.color = color;
+    }
+}
 
 export class GameManager implements ISubscriber {
     board: Board;
+    boardSize: number;
     currentPlayer: 'R' | 'B' = 'B';
-    availableColors = ['R', 'B'];
-    playerConnections: WebSocket[] = [];
+    availableColors: CellValue[] = ['R', 'B'];
+    players: PlayerData[] = [];
     constructor(size: number) {
         this.board = new Board(size);
+        this.boardSize = size;
     }
 
     private serializeBoard(): string {
@@ -19,6 +31,7 @@ export class GameManager implements ISubscriber {
             }
         }
         return result;
+        // return JSON.stringify(this.board.rows.map(row => row.map(node => node.color)));
     }
 
     private changeCurrentPlayer() {
@@ -37,26 +50,29 @@ export class GameManager implements ISubscriber {
             isP1Turn: this.currentPlayer === 'B',
             winner: winner
         };
-        this.playerConnections.forEach((client) => {
-            if (client.readyState === client.OPEN) {
-                client.send(JSON.stringify(message));
+        console.log(this.serializeBoard());
+        this.players.forEach((player) => {
+            if (player.ws.readyState === player.ws.OPEN) {
+                player.ws.send(JSON.stringify(message));
             }
         });
     }
 
     public onConnection(ws: WebSocket) {
         console.log('Player connected.');
-        const color = this.availableColors.length > 0
-            ? this.availableColors.pop() : '.'
+        console.log(`Available colors: ${this.availableColors.toString()}`);
+        const color: CellValue = this.availableColors.length > 0
+            ? this.availableColors.pop()! : '.'
         ws.send(JSON.stringify({
-            type: 'myColor',
-            myColor: color
+            type: 'init',
+            myColor: color,
+            boardSize: this.boardSize,
         }));
-        this.playerConnections.push(ws);
+        this.players.push(new PlayerData(ws, color));
     }
 
     public onMessage(ws: WebSocket, message: any) {
-        if (this.playerConnections.length < 2 || this.currentPlayer !== message.color) {
+        if (this.players.length < 2 || this.currentPlayer !== message.color) {
             return;
         }
 
@@ -64,7 +80,10 @@ export class GameManager implements ISubscriber {
     }
 
     public onClose(ws: WebSocket) {
-        console.log('Player disconnected.');
-        this.playerConnections = this.playerConnections.filter(conn => conn !== ws);
+        const color = this.players.find(player => player.ws == ws)!.color
+        if (color !== '.') this.availableColors.push(color);
+        this.players = this.players.filter(player => player.ws != ws);
+        this.board.reset();
+        console.log(`Player ${color} disconnected.`);
     }
 }
