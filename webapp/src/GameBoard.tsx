@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Board, MoveResult } from '../../gamey/Board';
+import { createGame, saveGame } from './api';
 import './GameBoard.css';
 
 type CellValue = '.' | 'B' | 'R';
@@ -25,6 +26,29 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
     const [board, setBoard] = useState<CellValue[][]>(createInitialBoard(boardSize));
     const [isP1Turn, setP1Turn] = useState<boolean>(true);
     const [winner, setWinner] = useState<CellValue | null>(null);
+    const [gameId, setGameId] = useState<string | null>(null);
+
+    // Create a new game when component mounts
+    useEffect(() => {
+        const startNewGame = async () => {
+            try {
+                const response = await createGame(board, 'B', 'in-progress');
+                setGameId(response.id);
+            } catch (error) {
+                console.error('Failed to create game:', error);
+            }
+        };
+        startNewGame();
+    }, []);
+
+    // Save game state whenever it changes
+    useEffect(() => {
+        if (gameId) {
+            saveGame(gameId, board, isP1Turn ? 'R' : 'B', winner ? 'finished' : 'in-progress').catch(error => {
+                console.error('Failed to save game:', error);
+            });
+        }
+    }, [gameId, board, isP1Turn, winner]);
 
     useEffect(() => {
         if (winner !== null && (winner === 'B' || winner === 'R')) {
@@ -93,16 +117,16 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
     };
 
     const winner_text = winner === 'B'
-        ? 'Jucător 1 (Albastru - B)'
-        : 'Jucător 2 (Roșu - R)';
+        ? 'Blue Player'
+        : 'Red Player';
 
     const turn_text = isP1Turn
-        ? 'Jucător 1 (Albastru - B)'
-        : 'Jucător 2 (Roșu - R)';
+        ? 'Blue Player'
+        : 'Red Player';
 
     const header_text = winner !== null
-        ? `Câștigător: ${winner_text}`
-        : `Rândul: ${turn_text}`;
+        ? `Winner: ${winner_text}`
+        : `Next: ${turn_text}`;
 
     return (
         <div className="game-board-container">

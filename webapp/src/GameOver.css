@@ -5,7 +5,7 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    background: linear-gradient(135deg,#667eea 0%, #764ba2 100%);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -43,8 +43,8 @@
     font-size: 96px;
     font-weight: bold;
     margin: 0 0 30px 0;
-    color: #ffd700;
-    text-shadow: 3px 3px 12px rgba(0, 0, 0, 0.9);
+    color: #ffffff;
+    text-shadow: 3px 3px 12px rgba(254, 251, 255, 0.3);
     letter-spacing: 5px;
 }
 
@@ -52,14 +52,14 @@
     font-size: 36px;
     margin: 0 0 50px 0;
     color: #fff;
-    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9);
+    text-shadow: 2px 2px 8px rgba(241, 239, 243, 0.3);
 }
 
 .play-again-btn {
     font-size: 20px;
     padding: 15px 50px;
-    background-color: #ffd700;
-    color: #1a1a1a;
+    background-color: #764ba2;
+    color: #f0eded;
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -67,16 +67,16 @@
     transition: all 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 2px;
-    box-shadow: 0 8px 16px rgba(255, 215, 0, 0.3);
+    box-shadow: 0 8px 16px rgba(187, 0, 255, 0.3);
 }
 
 .play-again-btn:hover {
-    background-color: #ffed4e;
+    background-color: #4c3971;
     transform: translateY(-3px);
-    box-shadow: 0 12px 24px rgba(255, 215, 0, 0.5);
+    box-shadow: 0 12px 24px rgba(114, 90, 132, 0.5);
 }
 
 .play-again-btn:active {
     transform: translateY(-1px);
-    box-shadow: 0 6px 12px rgba(255, 215, 0, 0.3);
+    box-shadow: 0 6px 12px rgba(70, 55, 86, 0.3);
 }
