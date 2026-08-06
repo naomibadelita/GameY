@@ -25,7 +25,7 @@ const wss = new WebSocketServer({ server });
 
 // Handle the connection and game logic
 const wssm = new WebSocketServerManager(wss);
-const gm = new GameManager(4);
+const gm = new GameManager(8);
 wssm.subscribe(gm);
 
 server.listen(PORT, () => {

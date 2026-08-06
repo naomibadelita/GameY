@@ -79,11 +79,16 @@ export class GameManager implements ISubscriber {
         if (message.type === 'move') this.onMove(message);
     }
 
+    private reset() {
+        this.board.reset();
+        this.currentPlayer = 'B';
+    }
+
     public onClose(ws: WebSocket) {
         const color = this.players.find(player => player.ws == ws)!.color
         if (color !== '.') this.availableColors.push(color);
         this.players = this.players.filter(player => player.ws != ws);
-        this.board.reset();
         console.log(`Player ${color} disconnected.`);
+        this.reset();
     }
 }

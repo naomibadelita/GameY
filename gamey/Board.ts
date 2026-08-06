@@ -73,7 +73,7 @@ export class Board {
     }
 
     private generateRows() {
-        this.rows = this.rows.filter(_ => true);
+        this.rows = this.rows.filter(_ => false);
 
         for (let i = 0; i < this.size; ++i) {
             this.rows.push([]);
