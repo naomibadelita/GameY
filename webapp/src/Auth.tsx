@@ -35,7 +35,7 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     setIsLoading(false);
   }, []);
 
-  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+  const API_BASE = '/api';
 
   const login = async (email: string, password: string) => {
     const response = await fetch(`${API_BASE}/login`, {

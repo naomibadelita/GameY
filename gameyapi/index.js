@@ -1,19 +1,13 @@
 const express = require('express');
-const cors = require('cors');
+const path = require('node:path');
 const sqlite3 = require('sqlite3').verbose();
 const { randomUUID } = require('node:crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const app = express();
-app.disable('x-powered-by');
-const port = process.env.PORT || 3000;
-const db = new sqlite3.Database('gameys.db');
+const router = express.Router();
+const db = new sqlite3.Database(path.join(__dirname, 'gameys.db'));
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-
-const allowedOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
-app.use(cors({ origin: allowedOrigin }));
-app.use(express.json());
 
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
@@ -59,12 +53,12 @@ db.serialize(() => {
   `);
 });
 
-app.get('/health', (req, res) => {
+router.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
 // Register endpoint
-app.post('/register', (req, res) => {
+router.post('/register', (req, res) => {
   const { email, password, displayName } = req.body;
 
   if (!email || !password || !displayName) {
@@ -107,7 +101,7 @@ app.post('/register', (req, res) => {
 });
 
 // Login endpoint
-app.post('/login', (req, res) => {
+router.post('/login', (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -149,7 +143,7 @@ app.post('/login', (req, res) => {
 });
 
 // Get user profile endpoint
-app.get('/profile', verifyToken, (req, res) => {
+router.get('/profile', verifyToken, (req, res) => {
   res.json({
     userId: req.userId,
     email: req.email,
@@ -157,7 +151,7 @@ app.get('/profile', verifyToken, (req, res) => {
   });
 });
 
-app.post('/game', verifyToken, (req, res) => {
+router.post('/game', verifyToken, (req, res) => {
   const id = randomUUID();
   const { board, currentPlayer = 'B', status = 'in-progress' } = req.body;
 
@@ -178,7 +172,7 @@ app.post('/game', verifyToken, (req, res) => {
   );
 });
 
-app.get('/game/:id', verifyToken, (req, res) => {
+router.get('/game/:id', verifyToken, (req, res) => {
   const { id } = req.params;
 
   db.get('SELECT * FROM games WHERE id = ? AND userId = ?', [id, req.userId], (err, row) => {
@@ -199,7 +193,7 @@ app.get('/game/:id', verifyToken, (req, res) => {
   });
 });
 
-app.post('/game/:id', verifyToken, (req, res) => {
+router.post('/game/:id', verifyToken, (req, res) => {
   const { id } = req.params;
   const { board, currentPlayer, status } = req.body;
 
@@ -223,6 +217,4 @@ app.post('/game/:id', verifyToken, (req, res) => {
   );
 });
 
-app.listen(port, () => {
-  console.log(`GameY API listening at http://localhost:${port}`);
-});
+module.exports = router;

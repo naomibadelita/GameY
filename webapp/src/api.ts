@@ -1,7 +1,6 @@
-export type CellValue = '.' | 'B' | 'R';
-export type BoardState = CellValue[][];
+import type { BoardState } from "../../shared/CellValue";
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+const API_BASE = '/api';
 
 function handleResponse(response: Response) {
   if (!response.ok) {
@@ -23,7 +22,6 @@ function getAuthHeaders() {
   return headers;
 }
 
-// xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 

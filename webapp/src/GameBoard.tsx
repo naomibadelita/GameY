@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Board, MoveResult } from '../../gamey/Board';
 import { validateGameId, createGame, saveGame } from './api';
 import './GameBoard.css';
-import { type CellValue } from './CellValue';
-import { boardAtom, isP1TurnAtom, winnerAtom } from './Atoms';
-import { useAtom } from 'jotai'
+import { boardAtom, isP1TurnAtom, myColorAtom, winnerAtom } from './Atoms';
+import { useAtomValue } from 'jotai'
+import { ws } from './Connection';
 
 interface GameBoardProps {
     readonly boardSize: number;
@@ -12,10 +11,10 @@ interface GameBoardProps {
 }
 
 export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
-    const [engine] = useState<Board>(() => new Board(boardSize));
-    const [board, setBoard] = useAtom(boardAtom);
-    const [isP1Turn, setP1Turn] = useAtom(isP1TurnAtom);
-    const [winner, setWinner] = useAtom(winnerAtom);
+    const board = useAtomValue(boardAtom);
+    const isP1Turn = useAtomValue(isP1TurnAtom);
+    const winner = useAtomValue(winnerAtom);
+    const color = useAtomValue(myColorAtom);
     const [gameId, setGameId] = useState<string | null>(null);
 
     // Create a new game when component mounts
@@ -31,6 +30,8 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
         startNewGame();
     }, []);
 
+    // Maybe this shouldn't be the responsibility of the client
+    
     // Save game state whenever it changes
     useEffect(() => {
         if (gameId) {
@@ -50,23 +51,14 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
         if (winner !== '.' || board[y][x] !== '.') {
             return;
         }
-
-        const color: CellValue = isP1Turn ? 'B' : 'R';
-        const result = engine.placePiece(y, x, color);
-        if (result === MoveResult.OCCUPIED) {
-            return;
-        }
-
-        const newBoard = board.map(row => [...row]);
-        newBoard[y][x] = color;
-        setBoard(newBoard);
-
-        if (result === MoveResult.VICTORY) {
-            setWinner(color);
-            return;
-        }
-
-        setP1Turn(!isP1Turn);
+        const msg = JSON.stringify({
+            type: 'move',
+            x: x,
+            y: y,
+            color: color
+        });
+        console.log(`MSG: ${msg}`);
+        ws.send(msg);
     };
 
     const renderBoard = () => {

@@ -1,4 +1,3 @@
-//import { useState } from 'react'
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSetAtom } from 'jotai';
@@ -7,7 +6,7 @@ import './App.css'
 import GameBoard from './GameBoard';
 import GameOver from './GameOver';
 import { boardAtom, isP1TurnAtom, winnerAtom } from './Atoms';
-import { createInitialBoard } from './CellValue';
+import { createInitialBoard } from '../../shared/CellValue';
 
 function App() {
     const defaultBoardSize = 8;
@@ -25,16 +24,16 @@ function App() {
         setBoardWinner('.');
     };
 
-    const handleGameOver = (winnerColor: 'B' | 'R') => {
-        setWinner(winnerColor);
-        setGameState('over');
-    };
+  const handleGameOver = (winnerColor: 'B' | 'R') => {
+    setWinner(winnerColor);
+    setGameState('over');
+  };
 
-    const handlePlayAgain = () => {
-        resetGame();
-        setGameState('playing');
-        setWinner(null);
-    };
+  const handlePlayAgain = () => {
+    setGameState('playing');
+    setWinner(null);
+    window.location.reload();
+  };
 
     const handleLogout = () => {
         resetGame();
