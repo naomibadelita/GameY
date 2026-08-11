@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Board, MoveResult } from '../../gamey/Board';
+import { validateGameId, createGame, saveGame } from './api';
 import './GameBoard.css';
 import { type CellValue } from './CellValue';
 import { boardAtom, isP1TurnAtom, winnerAtom } from './Atoms';
@@ -15,6 +16,29 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
     const [board, setBoard] = useAtom(boardAtom);
     const [isP1Turn, setP1Turn] = useAtom(isP1TurnAtom);
     const [winner, setWinner] = useAtom(winnerAtom);
+    const [gameId, setGameId] = useState<string | null>(null);
+
+    // Create a new game when component mounts
+    useEffect(() => {
+        const startNewGame = async () => {
+            try {
+                const response = await createGame(board, 'B', 'in-progress');
+                setGameId(validateGameId(response.id));
+            } catch (error) {
+                console.error('Failed to create game:', error);
+            }
+        };
+        startNewGame();
+    }, []);
+
+    // Save game state whenever it changes
+    useEffect(() => {
+        if (gameId) {
+            saveGame(gameId, board, isP1Turn ? 'B' : 'R', winner !== '.' ? 'finished' : 'in-progress').catch(error => {
+                console.error('Failed to save game:', error);
+            });
+        }
+    }, [gameId, board, isP1Turn, winner]);
 
     useEffect(() => {
         if (winner !== null && (winner === 'B' || winner === 'R')) {
@@ -64,6 +88,7 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
 
                 rowCells.push(
                     <button
+                        type="button"
                         key={`cell-${y}-${x}`}
                         className={`hex-cell ${cellClass}`}
                         onClick={() => handleCellClick(y, x)}
@@ -83,16 +108,16 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
     };
 
     const winner_text = winner === 'B'
-        ? 'Jucător 1 (Albastru - B)'
-        : 'Jucător 2 (Roșu - R)';
+        ? 'Blue Player'
+        : 'Red Player';
 
     const turn_text = isP1Turn
-        ? 'Jucător 1 (Albastru - B)'
-        : 'Jucător 2 (Roșu - R)';
+        ? 'Blue Player'
+        : 'Red Player';
 
     const header_text = winner !== '.'
-        ? `Câștigător: ${winner_text}`
-        : `Rândul: ${turn_text}`;
+        ? `Winner: ${winner_text}`
+        : `Next: ${turn_text}`;
 
     return (
         <div className="game-board-container">
