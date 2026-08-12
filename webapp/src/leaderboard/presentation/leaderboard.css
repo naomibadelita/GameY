@@ -33,6 +33,14 @@
     justify-content: center;
 }
 
+.leaderboard-error {
+    padding: 12px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    color: #c33;
+    background-color: #fee;
+}
+
 .leaderboard-list {
     display: flex;
     flex: 1;

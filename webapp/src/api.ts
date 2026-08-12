@@ -59,3 +59,11 @@ export async function saveGame(id: string, board: BoardState, currentPlayer: str
   });
   return handleResponse(response);
 }
+
+export async function loadLeaderboard(category: string, metric: string) {
+  const response = await fetch(`${API_BASE}/leaderboard/${encodeURIComponent(category)}/${encodeURIComponent(metric)}`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(response);
+}

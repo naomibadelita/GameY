@@ -217,4 +217,45 @@ router.post('/game/:id', verifyToken, (req, res) => {
   );
 });
 
+function getLeaderboardByWins(res) {
+  db.all('SELECT userId, currentPlayer FROM games WHERE status = ?', ['finished'], (gamesError, games) => {
+    if (gamesError) return res.status(500).json({ error: gamesError.message });
+
+    const wins = {};
+    for (const game of games) {
+      if (game.currentPlayer === 'R') {
+        if(!wins[game.userId]) wins[game.userId] = 0;
+        wins[game.userId] += 1;
+      }
+    }
+
+    db.all('SELECT id, displayName FROM users', [], (usersError, users) => {
+      if (usersError) return res.status(500).json({ error: usersError.message });
+
+      const items = users
+        .filter(user => wins[user.id])
+        .map(user => ({
+          playerName: user.displayName,
+          numOfWins: wins[user.id],
+        }))
+        .sort((first, second) => second.numOfWins - first.numOfWins);
+
+      res.json({ items });
+    });
+  });
+}
+
+router.get('/leaderboard/:category/:metric', verifyToken, (req, res) => {
+  const { category, metric } = req.params;
+
+  switch (metric) {
+    case 'numOfWins':
+      return getLeaderboardByWins(res);
+
+    default:
+      return res.status(404).json({ error: 'Metric not found' });
+  }
+});
+
+
 module.exports = router;

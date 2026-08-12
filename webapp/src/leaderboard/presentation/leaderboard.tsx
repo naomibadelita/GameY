@@ -7,33 +7,48 @@ import './leaderboard.css';
 function Leaderboard() {
     const navigate = useNavigate();
     const [leaderboard, setLeaderboard] = useState<LeaderboardData | null>(null);
+    const [error, setError] = useState('');
 
     useEffect(() => {
-        void loadLeaderboardData().then(setLeaderboard);
+        void loadLeaderboardData()
+            .then(setLeaderboard)
+            .catch((err) => {
+                setError(err instanceof Error ? err.message : 'An error occurred');
+            });
     }, []);
+
+    const renderContent = () => {
+        if (error) {
+            return <div className="leaderboard-error">{error}</div>;
+        }
+
+        if (!leaderboard) {
+            return <h3 className="leaderboard-loading">Loading...</h3>;
+        }
+
+        return (
+            <ol className="leaderboard-list">
+                {leaderboard.items.map((item, index) => (
+                    <li
+                        key={`${item.playerName}-${index}`}
+                        className="leaderboard-item"
+                    >
+                        <div className="leaderboard-item-content">
+                            <span>{item.playerName || 'Anonymous player'}</span>
+                            <strong>{item.numOfWins} wins</strong>
+                        </div>
+                    </li>
+                ))}
+            </ol>
+        );
+    };
 
     return (
         <main className="leaderboard-page">
             <section className="leaderboard-card">
                 <h1>Leaderboard</h1>
 
-                {!leaderboard ? (
-                    <h3 className="leaderboard-loading">Loading...</h3>
-                ) : (
-                    <ol className="leaderboard-list">
-                        {leaderboard.items.map((item, index) => (
-                            <li
-                                key={`${item.playerName}-${index}`}
-                                className="leaderboard-item"
-                            >
-                                <div className="leaderboard-item-content">
-                                    <span>{item.playerName || 'Anonymous player'}</span>
-                                    <strong>{item.numOfWins} wins</strong>
-                                </div>
-                            </li>
-                        ))}
-                    </ol>
-                )}
+                {renderContent()}
 
                 <button
                     type="button"
