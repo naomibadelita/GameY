@@ -1,0 +1,78 @@
+.leaderboard-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.leaderboard-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 640px;
+    height: 700px;
+    max-height: calc(100vh - 48px);
+    padding: 32px;
+    overflow: hidden;
+    border-radius: 12px;
+    background-color: var(--bg);
+    box-shadow: var(--shadow);
+}
+
+.leaderboard-card h1 {
+    margin: 0 0 24px;
+    text-align: center;
+}
+
+.leaderboard-loading {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+}
+
+.leaderboard-list {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+    margin: 0 0 24px;
+    padding: 0 8px 0 32px;
+    overflow-y: auto;
+}
+
+.leaderboard-item {
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.leaderboard-item::marker {
+    font-weight: 600;
+}
+
+.leaderboard-item-content {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.back-button {
+    flex-shrink: 0;
+    width: 100%;
+    padding: 12px 20px;
+    border: 0;
+    border-radius: 6px;
+    color: white;
+    background-color: #667eea;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.back-button:hover {
+    background-color: #5868d8;
+}

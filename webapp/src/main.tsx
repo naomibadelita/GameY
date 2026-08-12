@@ -6,6 +6,7 @@ import './index.css'
 import App from './App.tsx'
 import Login from './Login'
 import ProtectedRoute from './ProtectedRoute'
+import Leaderboard from './leaderboard/presentation/leaderboard'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -18,6 +19,14 @@ createRoot(document.getElementById('root')!).render(
             element={
               <ProtectedRoute>
                 <App />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/leaderboard"
+            element={
+              <ProtectedRoute>
+                <Leaderboard />
               </ProtectedRoute>
             }
           />
