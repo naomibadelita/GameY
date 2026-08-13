@@ -31,36 +31,6 @@
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-.board-size-picker {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  margin: 0 auto 30px;
-  flex-wrap: wrap;
-}
-
-.size-btn {
-  padding: 12px 20px;
-  border-radius: 999px;
-  border: 2px solid rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.size-btn.selected {
-  background: white;
-  color: #333;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-}
-
-.size-btn:hover {
-  transform: translateY(-2px);
-}
-
 .menu-buttons {
   display: flex;
   flex-direction: column;

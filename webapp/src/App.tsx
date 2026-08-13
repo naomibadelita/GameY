@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSetAtom } from 'jotai';
 import { useAuth } from './Auth';
 import './App.css'
@@ -9,12 +9,7 @@ import { boardAtom, isP1TurnAtom, winnerAtom } from './Atoms';
 import { createInitialBoard } from '../../shared/CellValue';
 
 function App() {
-    const location = useLocation();
     const defaultBoardSize = 8;
-    const selectedBoardSize = typeof (location.state as { boardSize?: number } | null)?.boardSize === 'number'
-        ? (location.state as { boardSize?: number }).boardSize
-        : defaultBoardSize;
-
     const [gameState, setGameState] = useState<'playing' | 'over'>('playing');
     const [winner, setWinner] = useState<'B' | 'R' | null>(null);
     const { user, logout } = useAuth();
@@ -23,14 +18,8 @@ function App() {
     const setIsP1Turn = useSetAtom(isP1TurnAtom);
     const setBoardWinner = useSetAtom(winnerAtom);
 
-    useEffect(() => {
-        setBoard(createInitialBoard(selectedBoardSize));
-        setIsP1Turn(true);
-        setBoardWinner('.');
-    }, [selectedBoardSize, setBoard, setIsP1Turn, setBoardWinner]);
-
     const resetGame = () => {
-        setBoard(createInitialBoard(selectedBoardSize));
+        setBoard(createInitialBoard(defaultBoardSize));
         setIsP1Turn(true);
         setBoardWinner('.');
     };
@@ -43,7 +32,7 @@ function App() {
   const handlePlayAgain = () => {
     setGameState('playing');
     setWinner(null);
-    resetGame();
+    window.location.reload();
   };
 
     const handleLogout = () => {
@@ -62,7 +51,7 @@ function App() {
         </div>
       </div>
       {gameState === 'playing' ? (
-        <GameBoard boardSize={selectedBoardSize} onGameOver={handleGameOver} />
+        <GameBoard boardSize={defaultBoardSize} onGameOver={handleGameOver} />
       ) : (
         <GameOver winner={winner!} onPlayAgain={handlePlayAgain} />
       )}
