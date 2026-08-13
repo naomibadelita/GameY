@@ -8,7 +8,7 @@ import Login from './Login'
 import ProtectedRoute from './ProtectedRoute'
 import Leaderboard from './leaderboard/presentation/leaderboard'
 import MainMenu from './MainMenu'
-
+import BoardSize from './BoardSize'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -21,6 +21,14 @@ createRoot(document.getElementById('root')!).render(
             element={
               <ProtectedRoute>
                 <MainMenu />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/board-size"
+            element={
+              <ProtectedRoute>
+                <BoardSize />
               </ProtectedRoute>
             }
           />

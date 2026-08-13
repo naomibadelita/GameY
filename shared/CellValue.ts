@@ -11,3 +11,11 @@ export function createInitialBoard(size: number): CellValue[][] {
 
     return board;
 }
+
+export function normalizeBoardForSize(board: BoardState, size: number): BoardState {
+    if (board.length >= size && board.every((row, index) => row.length >= index + 1)) {
+        return board;
+    }
+
+    return createInitialBoard(size);
+}

@@ -72,6 +72,25 @@ export class GameManager implements ISubscriber {
     }
 
     public onMessage(ws: WebSocket, message: any) {
+        if (message.type === 'setup') {
+            const requestedSize = Number(message.boardSize);
+            if (!Number.isNaN(requestedSize) && requestedSize > 1) {
+                this.reset(requestedSize);
+                const state = {
+                    type: 'update',
+                    board: this.serializeBoard(),
+                    isP1Turn: this.currentPlayer === 'B',
+                    winner: '.',
+                };
+                this.players.forEach((player) => {
+                    if (player.ws.readyState === player.ws.OPEN) {
+                        player.ws.send(JSON.stringify(state));
+                    }
+                });
+            }
+            return;
+        }
+
         if (this.players.length < 2 || this.currentPlayer !== message.color) {
             return;
         }
@@ -79,9 +98,11 @@ export class GameManager implements ISubscriber {
         if (message.type === 'move') this.onMove(message);
     }
 
-    private reset() {
-        this.board.reset();
+    private reset(size: number = this.boardSize) {
+        this.board = new Board(size);
+        this.boardSize = size;
         this.currentPlayer = 'B';
+        this.availableColors = ['R', 'B'];
     }
 
     public onClose(ws: WebSocket) {

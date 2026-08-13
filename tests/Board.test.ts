@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 import { Board, MoveResult } from '../gamey/Board';
+import { createInitialBoard, normalizeBoardForSize } from '../shared/CellValue';
 
 // Use `npm run test`
 
@@ -64,4 +65,13 @@ test('test game winning 4', () => {
     empty_board.placePiece(6, 3, 'white');
     empty_board.placePiece(5, 2, 'white');
     expect(empty_board.placePiece(4, 2, 'white')).toBe(MoveResult.VICTORY);
+});
+
+test('normalize board for requested size prevents render crash on larger boards', () => {
+    const currentBoard = createInitialBoard(8);
+    const normalizedBoard = normalizeBoardForSize(currentBoard, 10);
+
+    expect(normalizedBoard).toHaveLength(10);
+    expect(normalizedBoard[9]).toHaveLength(10);
+    expect(normalizedBoard[0]).toHaveLength(1);
 });

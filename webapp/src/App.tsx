@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useSetAtom } from 'jotai';
 import { useAuth } from './Auth';
 import './App.css'
@@ -7,9 +7,13 @@ import GameBoard from './GameBoard';
 import GameOver from './GameOver';
 import { boardAtom, isP1TurnAtom, winnerAtom } from './Atoms';
 import { createInitialBoard } from '../../shared/CellValue';
+import { ws } from './Connection';
 
 function App() {
-    const defaultBoardSize = 8;
+    const location = useLocation();
+    const rawBoardSize = (location.state as { boardSize?: number | string } | null)?.boardSize ?? 8;
+    const selectedBoardSize = Number(rawBoardSize);
+    const safeBoardSize = Number.isFinite(selectedBoardSize) && selectedBoardSize > 1 ? selectedBoardSize : 8;
     const [gameState, setGameState] = useState<'playing' | 'over'>('playing');
     const [winner, setWinner] = useState<'B' | 'R' | null>(null);
     const { user, logout } = useAuth();
@@ -18,8 +22,21 @@ function App() {
     const setIsP1Turn = useSetAtom(isP1TurnAtom);
     const setBoardWinner = useSetAtom(winnerAtom);
 
+    useEffect(() => {
+        setBoard(createInitialBoard(safeBoardSize));
+        setIsP1Turn(true);
+        setBoardWinner('.');
+        setGameState('playing');
+        setWinner(null);
+
+        ws.send(JSON.stringify({
+            type: 'setup',
+            boardSize: safeBoardSize,
+        }));
+    }, [safeBoardSize, setBoard, setIsP1Turn, setBoardWinner]);
+
     const resetGame = () => {
-        setBoard(createInitialBoard(defaultBoardSize));
+        setBoard(createInitialBoard(safeBoardSize));
         setIsP1Turn(true);
         setBoardWinner('.');
     };
@@ -51,7 +68,7 @@ function App() {
         </div>
       </div>
       {gameState === 'playing' ? (
-        <GameBoard boardSize={defaultBoardSize} onGameOver={handleGameOver} />
+        <GameBoard boardSize={safeBoardSize} onGameOver={handleGameOver} />
       ) : (
         <GameOver winner={winner!} onPlayAgain={handlePlayAgain} />
       )}

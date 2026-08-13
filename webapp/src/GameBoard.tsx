@@ -3,6 +3,7 @@ import { validateGameId, createGame, saveGame } from './api';
 import './GameBoard.css';
 import { boardAtom, isP1TurnAtom, myColorAtom, winnerAtom } from './Atoms';
 import { useAtomValue } from 'jotai'
+import { normalizeBoardForSize } from '../../shared/CellValue';
 import { ws } from './Connection';
 
 interface GameBoardProps {
@@ -16,39 +17,40 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
     const winner = useAtomValue(winnerAtom);
     const color = useAtomValue(myColorAtom);
     const [gameId, setGameId] = useState<string | null>(null);
+    const safeBoard = normalizeBoardForSize(board, boardSize);
 
     // Create a new game when component mounts
     useEffect(() => {
         const startNewGame = async () => {
             try {
-                const response = await createGame(board, 'B', 'in-progress');
+                const response = await createGame(safeBoard, 'B', 'in-progress');
                 setGameId(validateGameId(response.id));
             } catch (error) {
                 console.error('Failed to create game:', error);
             }
         };
         startNewGame();
-    }, []);
+    }, [safeBoard]);
 
     // Maybe this shouldn't be the responsibility of the client
     
     // Save game state whenever it changes
     useEffect(() => {
         if (gameId) {
-            saveGame(gameId, board, isP1Turn ? 'B' : 'R', winner !== '.' ? 'finished' : 'in-progress').catch(error => {
+            saveGame(gameId, safeBoard, isP1Turn ? 'B' : 'R', winner !== '.' ? 'finished' : 'in-progress').catch(error => {
                 console.error('Failed to save game:', error);
             });
         }
-    }, [gameId, board, isP1Turn, winner]);
+    }, [gameId, safeBoard, isP1Turn, winner]);
 
     useEffect(() => {
-        if (winner !== null && (winner === 'B' || winner === 'R')) {
+        if (winner === 'B' || winner === 'R') {
             onGameOver(winner);
         }
     }, [winner, onGameOver]);
 
     const handleCellClick = (y: number, x: number) => {
-        if (winner !== '.' || board[y][x] !== '.') {
+        if (winner !== '.' || safeBoard[y][x] !== '.') {
             return;
         }
         const msg = JSON.stringify({
@@ -66,7 +68,7 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
 
         for (let y = 0; y < boardSize; y++) {
             const rowCells = [];
-            const row = board[y];
+            const row = safeBoard[y];
 
             for (let x = 0; x <= y; x++) {
                 const cell = row[x];

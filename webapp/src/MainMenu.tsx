@@ -21,7 +21,7 @@ export default function MainMenu() {
           <button 
             type="button"
             className="menu-btn primary-btn"
-            onClick={() => navigate('/game')}
+            onClick={() => navigate('/board-size')}
           >
             Start New Game
           </button>
