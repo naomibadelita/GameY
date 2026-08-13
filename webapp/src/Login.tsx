@@ -34,7 +34,7 @@ export default function Login() {
         }
         await register(email, password, displayName);
       }
-      navigate('/game');
+      navigate('/menu');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

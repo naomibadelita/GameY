@@ -7,6 +7,8 @@ import App from './App.tsx'
 import Login from './Login'
 import ProtectedRoute from './ProtectedRoute'
 import Leaderboard from './leaderboard/presentation/leaderboard'
+import MainMenu from './MainMenu'
+
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -14,6 +16,14 @@ createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route
+            path="/menu"
+            element={
+              <ProtectedRoute>
+                <MainMenu />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/game"
             element={
@@ -30,7 +40,7 @@ createRoot(document.getElementById('root')!).render(
               </ProtectedRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/game" />} />
+          <Route path="/" element={<Navigate to="/menu" />} />
         </Routes>
       </AuthProvider>
     </Router>

@@ -18,7 +18,7 @@ const distPath = path.join(__dirname, '../../webapp/dist');
 app.use(express.json());
 app.use('/api', gameyApiRouter);
 app.use(express.static(distPath));
-app.get('{*splat}', (req, res) => {
+app.get(/^\/(?!api|ws).*/, (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
