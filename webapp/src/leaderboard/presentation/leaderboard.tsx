@@ -2,20 +2,37 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loadLeaderboardData } from '../data/leaderboard.loader';
 import type { LeaderboardData } from '../domain/leaderboard.entity';
+import type { LeaderboardCategory } from '../domain/leaderboard.types';
 import './leaderboard.css';
 
 function Leaderboard() {
     const navigate = useNavigate();
     const [leaderboard, setLeaderboard] = useState<LeaderboardData | null>(null);
+    const [category, setCategory] = useState<LeaderboardCategory>('all');
     const [error, setError] = useState('');
 
     useEffect(() => {
-        void loadLeaderboardData()
-            .then(setLeaderboard)
+        let isCurrentRequest = true;
+
+        setLeaderboard(null);
+        setError('');
+
+        void loadLeaderboardData(category)
+            .then((data) => {
+                if (isCurrentRequest) {
+                    setLeaderboard(data);
+                }
+            })
             .catch((err) => {
-                setError(err instanceof Error ? err.message : 'An error occurred');
+                if (isCurrentRequest) {
+                    setError(err instanceof Error ? err.message : 'An error occurred');
+                }
             });
-    }, []);
+
+        return () => {
+            isCurrentRequest = false;
+        };
+    }, [category]);
 
     const renderContent = () => {
         if (error) {
@@ -47,6 +64,19 @@ function Leaderboard() {
         <main className="leaderboard-page">
             <section className="leaderboard-card">
                 <h1>Leaderboard</h1>
+
+                <label className="leaderboard-category">
+                    Category
+                    <select
+                        value={category}
+                        onChange={(event) => setCategory(event.target.value as LeaderboardCategory)}
+                    >
+                        <option value="all">All</option>
+                        <option value="6">6x6</option>
+                        <option value="8">8x8</option>
+                        <option value="10">10x10</option>
+                    </select>
+                </label>
 
                 {renderContent()}
 

@@ -26,6 +26,26 @@
     text-align: center;
 }
 
+.leaderboard-category {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.leaderboard-category select {
+    min-width: 120px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: inherit;
+    background-color: var(--bg);
+    font: inherit;
+    cursor: pointer;
+}
+
 .leaderboard-loading {
     display: flex;
     flex: 1;

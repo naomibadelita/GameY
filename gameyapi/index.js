@@ -218,7 +218,6 @@ router.post('/game/:id', verifyToken, (req, res) => {
   );
 });
 
-
 function getLeaderboardData(processData) {
   return new Promise((resolve, reject) => {
     db.all('SELECT * FROM games WHERE status = ?', ['finished'], (gamesError, games) => {
@@ -255,10 +254,11 @@ async function replaceUidWithName(data) {
 async function getLeaderboardByWins(res, category) {
   try {
     let items = await getLeaderboardData((game, numOfWins = 0) => {
+      const board = JSON.parse(game.board);
       if (
         game.currentPlayer === 'R' &&
         category === 'all' ||
-        game.board.length !== Number(category)
+        board.length === Number(category)
       ) {
         return numOfWins + 1;
       }
@@ -281,12 +281,11 @@ router.get('/leaderboard/:category/:metric', verifyToken, (req, res) => {
 
   switch (metric) {
     case 'numOfWins':
-      return getLeaderboardByWins(res);
+      return getLeaderboardByWins(res, category);
 
     default:
       return res.status(404).json({ error: 'Metric not found' });
   }
 });
-
 
 module.exports = router;
