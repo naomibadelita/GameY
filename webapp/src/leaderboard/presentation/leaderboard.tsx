@@ -53,7 +53,7 @@ function Leaderboard() {
                 <button
                     type="button"
                     className="back-button"
-                    onClick={() => navigate('/game')}
+                    onClick={() => navigate('/menu')}
                 >
                     Back to game
                 </button>
