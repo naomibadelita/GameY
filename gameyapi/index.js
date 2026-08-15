@@ -4,6 +4,7 @@ const sqlite3 = require('sqlite3').verbose();
 const { randomUUID } = require('node:crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { resolve } = require('node:dns');
 
 const router = express.Router();
 const db = new sqlite3.Database(path.join(__dirname, 'gameys.db'));
@@ -217,32 +218,62 @@ router.post('/game/:id', verifyToken, (req, res) => {
   );
 });
 
-function getLeaderboardByWins(res) {
-  db.all('SELECT userId, currentPlayer FROM games WHERE status = ?', ['finished'], (gamesError, games) => {
-    if (gamesError) return res.status(500).json({ error: gamesError.message });
-
-    const wins = {};
-    for (const game of games) {
-      if (game.currentPlayer === 'R') {
-        if(!wins[game.userId]) wins[game.userId] = 0;
-        wins[game.userId] += 1;
+function getLeaderboardData(processData) {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT * FROM games WHERE status = ?', ['finished'], (gamesError, games) => {
+      if (gamesError) {
+        reject(gamesError);
+        return;
       }
-    }
-
-    db.all('SELECT id, displayName FROM users', [], (usersError, users) => {
-      if (usersError) return res.status(500).json({ error: usersError.message });
-
-      const items = users
-        .filter(user => wins[user.id])
-        .map(user => ({
-          playerName: user.displayName,
-          numOfWins: wins[user.id],
-        }))
-        .sort((first, second) => second.numOfWins - first.numOfWins);
-
-      res.json({ items });
+      const data = {};
+      for (const game of games) {
+        data[game.userId] = processData(game, data[game.userId]);
+      }
+      resolve(data);
     });
   });
+}
+
+async function replaceUidWithName(data) {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT id, displayName FROM users', [], (usersError, users) => {
+      if (usersError) {
+        reject(usersError)
+        return;
+      }
+      const items = Object.fromEntries(
+        users
+          .filter(user => data[user.id])
+          .map(user => [user.displayName, data[user.id]])
+      );
+      resolve(items);
+    });
+  });
+}
+
+async function getLeaderboardByWins(res, category) {
+  try {
+    let items = await getLeaderboardData((game, numOfWins = 0) => {
+      const board = JSON.parse(game.board);
+      if (
+        game.currentPlayer === 'R' &&
+        category === 'all' ||
+        board.length === Number(category)
+      ) {
+        return numOfWins + 1;
+      }
+      return numOfWins;
+    });
+    items = await replaceUidWithName(items);
+    items = Object.entries(items).map(([displayName, numOfWins]) => ({
+      playerName: displayName,
+      numOfWins: numOfWins,
+    }));
+    items = items.sort((first, second) => second.numOfWins - first.numOfWins);
+    res.json({ items });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
 }
 
 router.get('/leaderboard/:category/:metric', verifyToken, (req, res) => {
@@ -250,12 +281,11 @@ router.get('/leaderboard/:category/:metric', verifyToken, (req, res) => {
 
   switch (metric) {
     case 'numOfWins':
-      return getLeaderboardByWins(res);
+      return getLeaderboardByWins(res, category);
 
     default:
       return res.status(404).json({ error: 'Metric not found' });
   }
 });
-
 
 module.exports = router;
