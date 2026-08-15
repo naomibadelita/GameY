@@ -47,9 +47,7 @@ function App() {
   };
 
   const handlePlayAgain = () => {
-    setGameState('playing');
-    setWinner(null);
-    window.location.reload();
+    navigate('/board-size');
   };
 
     const handleLogout = () => {
