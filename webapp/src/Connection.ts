@@ -1,6 +1,6 @@
 import { getDefaultStore } from "jotai";
 import { type CellValue } from "../../shared/CellValue";
-import { boardAtom, isP1TurnAtom, winnerAtom, myColorAtom } from "./Atoms";
+import { boardAtom, isGameReadyAtom, isP1TurnAtom, winnerAtom, myColorAtom } from "./Atoms";
 
 const getWebSocketUrl = (): string => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -45,6 +45,10 @@ ws.onmessage = (ev) => {
             if (store.get(myColorAtom) === '.') {
                 store.set(myColorAtom, data.myColor);
             }
+            break;
+
+        case 'status':
+            store.set(isGameReadyAtom, data.isGameReady);
             break;
     }
 };

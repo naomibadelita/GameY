@@ -5,3 +5,4 @@ export const boardAtom = atom<CellValue[][]>(createInitialBoard(8));
 export const isP1TurnAtom = atom<boolean>(true);
 export const winnerAtom = atom<CellValue>('.');
 export const myColorAtom = atom<CellValue>('.');
+export const isGameReadyAtom = atom<boolean>(false);

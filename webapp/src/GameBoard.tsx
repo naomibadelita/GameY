@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { validateGameId, createGame, saveGame } from './api';
 import './GameBoard.css';
-import { boardAtom, isP1TurnAtom, myColorAtom, winnerAtom } from './Atoms';
+import { boardAtom, isGameReadyAtom, isP1TurnAtom, myColorAtom, winnerAtom } from './Atoms';
 import { useAtomValue } from 'jotai'
 import { normalizeBoardForSize } from '../../shared/CellValue';
 import { ws } from './Connection';
@@ -14,6 +14,7 @@ interface GameBoardProps {
 export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
     const board = useAtomValue(boardAtom);
     const isP1Turn = useAtomValue(isP1TurnAtom);
+    const isGameReady = useAtomValue(isGameReadyAtom);
     const winner = useAtomValue(winnerAtom);
     const color = useAtomValue(myColorAtom);
     const [gameId, setGameId] = useState<string | null>(null);
@@ -109,9 +110,13 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
         ? 'Blue Player'
         : 'Red Player';
 
-    const header_text = winner !== '.'
+    const in_game_text = winner !== '.'
         ? `Winner: ${winner_text}`
         : `Next: ${turn_text}`;
+
+    const header_text = isGameReady
+        ? in_game_text
+        : 'Waiting for opponent...';
 
     return (
         <div className="game-board-container">

@@ -38,6 +38,18 @@ export class GameManager implements ISubscriber {
         this.currentPlayer = this.currentPlayer === 'B' ? 'R' : 'B';
     }
 
+    private notifyGameStatus() {
+        const message = {
+            type: 'status',
+            isGameReady: this.players.filter(player => player.color !== '.').length === 2
+        };
+        this.players.forEach((player) => {
+            if (player.ws.readyState === player.ws.OPEN) {
+                player.ws.send(JSON.stringify(message));
+            }
+        });
+    }
+
     private onMove(data: any) {
         const result = this.board.placePiece(data.y, data.x, data.color);
         if (result === MoveResult.OCCUPIED) return;
@@ -69,6 +81,7 @@ export class GameManager implements ISubscriber {
             boardSize: this.boardSize,
         }));
         this.players.push(new PlayerData(ws, color));
+        this.notifyGameStatus();
     }
 
     public onMessage(ws: WebSocket, message: any) {
@@ -111,5 +124,6 @@ export class GameManager implements ISubscriber {
         this.players = this.players.filter(player => player.ws != ws);
         console.log(`Player ${color} disconnected.`);
         this.reset();
+        this.notifyGameStatus();
     }
 }
