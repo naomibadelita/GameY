@@ -1,0 +1,22 @@
+.statistics-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.statistics-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 640px;
+    height: 700px;
+    max-height: calc(100vh - 48px);
+    padding: 32px;
+    overflow: hidden;
+    border-radius: 12px;
+    background-color: var(--bg);
+    box-shadow: var(--shadow);
+
+}

@@ -16,25 +16,33 @@ export default function MainMenu() {
       <div className="menu-content">
         <h1 className="menu-title">Game Y</h1>
         <p className="menu-welcome">Welcome, {user?.displayName}!</p>
-        
+
         <div className="menu-buttons">
-          <button 
+          <button
             type="button"
             className="menu-btn primary-btn"
             onClick={() => navigate('/board-size')}
           >
             Start New Game
           </button>
-          
-          <button 
+
+          <button
             type="button"
             className="menu-btn primary-btn"
             onClick={() => navigate('/leaderboard')}
           >
             View Leaderboard
           </button>
-          
-          <button 
+
+          <button
+            type="button"
+            className="menu-btn primary-btn"
+            onClick={() => navigate('/statistics')}
+          >
+            View Statistics
+          </button>
+
+          <button
             type="button"
             className="menu-btn logout-btn"
             onClick={handleLogout}

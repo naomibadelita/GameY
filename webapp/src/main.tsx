@@ -9,6 +9,7 @@ import ProtectedRoute from './ProtectedRoute'
 import Leaderboard from './leaderboard/presentation/leaderboard'
 import MainMenu from './MainMenu'
 import BoardSize from './BoardSize'
+import StatisticsPage from './statistics/presentation/StatisticsPage.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -45,6 +46,14 @@ createRoot(document.getElementById('root')!).render(
             element={
               <ProtectedRoute>
                 <Leaderboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/statistics"
+            element={
+              <ProtectedRoute>
+                <StatisticsPage />
               </ProtectedRoute>
             }
           />
