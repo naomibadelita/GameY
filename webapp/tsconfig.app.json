@@ -22,5 +22,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "../shared/CellValue.ts", "../server/src/api.ts"]
+  "include": ["src", "../shared/CellValue.ts", "../server/src/api.ts", "../shared/features/profiles/domain/profile.entity.ts"]
 }
