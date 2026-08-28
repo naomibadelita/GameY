@@ -15,17 +15,17 @@ export function loadPageOfMatches(
     limit: number,
 ): Promise<MatchData[]> {
     return Promise.resolve(
-        uid === '0' || page === -1 || limit === -1 ? [] : [{
-            player1: {
-                photoUrl: undefined,
-                displayName: 'abc',
-            },
-            player2: {
-                photoUrl: undefined,
-                displayName: 'def',
-            },
-            winner: 1,
-            boardSize: 8,
-        }]
-    );
+        uid === '0' || page < 0 || page > 8 || limit === -1 ? [] :
+            Array.from({ length: limit }, () => ({
+                player1: {
+                    photoUrl: undefined,
+                    displayName: 'Barbaraba',
+                },
+                player2: {
+                    photoUrl: undefined,
+                    displayName: 'Robobom',
+                },
+                winner: 1,
+                boardSize: 8,
+            })));
 }

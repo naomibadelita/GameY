@@ -1,12 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import "./StatisticsPage.css"
 import { useEffect, useRef, useState } from 'react';
 import type { Profile } from '../domain/profile.entity';
 import type { MatchData, StatisticsData } from '../domain/statistics.entity';
 import { loadProfile } from '../data/profile.loader';
 import { loadPageOfMatches, loadStatistic } from '../data/statistics.loader';
+import './StatisticsPage.css';
 
-interface StatisticsPageParams { readonly uid: string };
+interface StatisticsPageParams { readonly uid: string; }
 export default function StatisticsPage({ uid }: StatisticsPageParams) {
     const navigate = useNavigate();
 
@@ -30,7 +30,7 @@ export default function StatisticsPage({ uid }: StatisticsPageParams) {
         loadHistoryPage();
     }
 
-    const loaderRef = useRef<HTMLDivElement | null>(null);
+    const loaderRef = useRef<HTMLLIElement | null>(null);
 
     useEffect(() => { init(); }, []);
 
@@ -51,14 +51,45 @@ export default function StatisticsPage({ uid }: StatisticsPageParams) {
         };
     }, [page]);
 
-    const renderMatch = (match: MatchData) => {
+    const renderPlayer = (player: Profile, result: string, right = false) => {
         return (
-            <li>
-                {match.player1.displayName}
-                {match.winner == 1 ? ' won' : ''}
-                &lt;---{match.boardSize}---&gt;
-                {match.winner == 2 ? 'won ' : ''}
-                {match.player2.displayName}
+            <div className={`history-player ${right ? 'history-player-right' : ''}`}>
+                <img
+                    className={`match-player-image match-player-image-${result}`}
+                    src={player.photoUrl ?? 'https://picsum.photos/48'}
+                    alt={`${player.displayName}'s profile`}
+                />
+                <span className={`history-player-name ${result === 'winner' ? 'winner-name' : ''}`}>
+                    {player.displayName}
+                </span>
+            </div>
+        );
+    }
+
+    const renderMatch = (match: MatchData, index: number) => {
+        let player1Result = 'draw';
+        let player2Result = 'draw';
+
+        switch (match.winner) {
+            case 1:
+                player1Result = 'winner';
+                player2Result = 'loser';
+                break;
+            case 2:
+                player1Result = 'loser';
+                player2Result = 'winner';
+                break;
+        }
+
+        return (
+            <li className="history-item" key={index} >
+                {renderPlayer(match.player1, player1Result)}
+
+                <div className="history-match-details">
+                    <span className="board-size">{match.boardSize}</span>
+                </div>
+
+                {renderPlayer(match.player2, player2Result, true)}
             </li>
         );
     }
@@ -66,16 +97,38 @@ export default function StatisticsPage({ uid }: StatisticsPageParams) {
     return (
         <main className="statistics-page">
             <section className="statistics-card">
-                <h1>Statistics & History</h1>
-                <h3>{profile?.displayName}</h3>
-                <h3>{statistics?.elo}</h3>
+                <h1>Statistics &amp; History</h1>
 
-                <ul>{history.map(renderMatch)}</ul>
-                <div ref={loaderRef} style={{ textAlign: 'center', padding: '10px' }}></div>
+                <header className="statistics-header">
+                    <img
+                        className="profile-image"
+                        src={profile?.photoUrl ?? 'https://picsum.photos/96'}
+                        alt={`${profile?.displayName ?? 'Anonymous'}'s profile`}
+                    />
+                    <div className="profile-column">
+                        <h2>{profile?.displayName ?? 'Loading profile...'}</h2>
+                        <div className="elo-row">
+                            <span>ELO rating</span>
+                            <strong>{statistics?.elo ?? '-'}</strong>
+                        </div>
+                    </div>
+                </header>
+
+                <div className="history-section">
+                    <h2>Match history</h2>
+
+                    <ul className="history-list">
+                        {history.map((element, index) => renderMatch(element, index))}
+                        {history.length === 0 && (
+                            <li className="history-empty">Loading match history...</li>
+                        )}
+                        <li ref={loaderRef} className="history-loader" aria-hidden="true" />
+                    </ul>
+                </div>
 
                 <button
                     type="button"
-                    className="back-button"
+                    className="statistics-back-button"
                     onClick={() => navigate('/menu')}
                 >
                     Back to game
