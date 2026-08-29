@@ -1,4 +1,6 @@
 import type { BoardState } from "../../shared/CellValue";
+import type { Profile } from "./statistics/domain/profile.entity";
+import type { MatchData, StatisticsData } from "./statistics/domain/statistics.entity";
 
 const API_BASE = '/api';
 
@@ -65,5 +67,32 @@ export async function loadLeaderboard(category: string, metric: string) {
     method: 'GET',
     headers: getAuthHeaders(),
   });
+  return handleResponse(response);
+}
+
+export async function loadProfile(uid: string): Promise<Profile> {
+  const response = await fetch(`${API_BASE}/profile/${encodeURIComponent(uid)}`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+
+  return handleResponse(response);
+}
+
+export async function loadStatistics(uid: string): Promise<StatisticsData> {
+  const response = await fetch(`${API_BASE}/statistics/${encodeURIComponent(uid)}`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+
+  return handleResponse(response);
+}
+
+export async function loadHistory(uid: string, page: number, limit: number): Promise<MatchData[]> {
+  const response = await fetch(`${API_BASE}/history/${encodeURIComponent(uid)}/${page}/${limit}`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+
   return handleResponse(response);
 }

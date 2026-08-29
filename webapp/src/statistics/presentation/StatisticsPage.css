@@ -81,15 +81,12 @@
 }
 
 .history-section > h2 {
-    margin-bottom: 10px;
+    margin: 0 0 10px;
     font-size: 1rem;
 }
 
 .history-list {
-    display: flex;
     flex: 1;
-    flex-direction: column;
-    gap: 8px;
     min-height: 0;
     margin: 0;
     padding: 2px 6px 2px 0;
@@ -98,12 +95,14 @@
 }
 
 .history-item {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    display: flex;
     align-items: center;
     gap: 12px;
+    height: 76px;
     min-height: 76px;
-    padding: 12px 16px;
+    max-height: 76px;
+    margin-bottom: 8px;
+    padding: 8px 12px;
     border: 1px solid rgb(128 128 128 / 14%);
     border-radius: 12px;
     background: rgb(128 128 128 / 5%);
@@ -112,6 +111,7 @@
 
 .history-player {
     display: flex;
+    flex: 1;
     align-items: center;
     min-width: 0;
     gap: 9px;

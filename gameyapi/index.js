@@ -143,15 +143,6 @@ router.post('/login', (req, res) => {
   });
 });
 
-// Get user profile endpoint
-router.get('/profile', verifyToken, (req, res) => {
-  res.json({
-    userId: req.userId,
-    email: req.email,
-    displayName: req.displayName,
-  });
-});
-
 router.post('/game', verifyToken, (req, res) => {
   const id = randomUUID();
   const { board, currentPlayer = 'B', status = 'in-progress' } = req.body;
@@ -218,9 +209,16 @@ router.post('/game/:id', verifyToken, (req, res) => {
   );
 });
 
-function getLeaderboardData(processData) {
+function getGamesData(processData, offset = 0, limit = -1) {
   return new Promise((resolve, reject) => {
-    db.all('SELECT * FROM games WHERE status = ?', ['finished'], (gamesError, games) => {
+    db.all(`
+      SELECT * 
+      FROM games 
+      WHERE status = ? 
+      ORDER BY updatedAt DESC 
+      LIMIT ? 
+      OFFSET ? 
+      `, ['finished', limit, offset], (gamesError, games) => {
       if (gamesError) {
         reject(gamesError);
         return;
@@ -253,7 +251,7 @@ async function replaceUidWithName(data) {
 
 async function getLeaderboardByWins(res, category) {
   try {
-    let items = await getLeaderboardData((game, numOfWins = 0) => {
+    let items = await getGamesData((game, numOfWins = 0) => {
       const board = JSON.parse(game.board);
       if (
         game.currentPlayer === 'R' &&
@@ -286,6 +284,79 @@ router.get('/leaderboard/:category/:metric', verifyToken, (req, res) => {
     default:
       return res.status(404).json({ error: 'Metric not found' });
   }
+});
+
+/// Public profile
+
+async function loadProfile(uid) {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT * FROM users WHERE id = ?', [uid], (err, row) => {
+      if (err) {
+        reject({ status: 500, error: err.message });
+        return;
+      }
+      if (!row) {
+        reject({ status: 404, error: 'User not found' });
+        return;
+      }
+      resolve({
+        displayName: row.displayName,
+        photoUrl: row.photoUrl, // may be undefined, but it's ok
+      });
+    });
+  });
+}
+router.get('/profile/:uid', verifyToken, async (req, res) => {
+  const { uid } = req.params;
+  try {
+    res.json(await loadProfile(uid));
+  } catch (err) {
+    res.status(err.status).json(err.error);
+  }
+});
+
+function getUserGames(uid, page = 0, limit = -1) {
+  const offset = page * limit;
+  return new Promise((resolve, reject) => {
+    db.all(`
+      SELECT * 
+      FROM games 
+      WHERE status = ? AND userId = ?
+      ORDER BY updatedAt DESC 
+      LIMIT ? 
+      OFFSET ? 
+      `, ['finished', uid, limit, offset], (gamesError, games) => {
+      if (gamesError) {
+        reject(gamesError);
+        return;
+      }
+      resolve(games);
+    });
+  });
+}
+
+router.get('/statistics/:uid', verifyToken, async (req, res) => {
+  const { uid } = req.params;
+  const games = await getUserGames(uid);
+  res.json({
+    elo: 1600,
+    matchesPlayed: games.length,
+    matchesWon: games.length,
+    timePlayed: 0,
+  });
+});
+
+router.get('/history/:uid/:page/:limit', verifyToken, async (req, res) => {
+  const { uid, page, limit } = req.params;
+  const games = await getUserGames(uid, page, limit);
+  const profile = await loadProfile(uid);
+  const result = games.map((game) => ({
+    player1: profile,
+    player2: { displayName: 'Anonymous' },
+    winner: 1,
+    boardSize: JSON.parse(game.board).length,
+  }));
+  res.json(result);
 });
 
 module.exports = router;

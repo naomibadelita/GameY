@@ -52,7 +52,11 @@ function Leaderboard() {
                     >
                         <div className="leaderboard-item-content">
                             <span>{item.playerName || 'Anonymous player'}</span>
-                            <strong>{item.numOfWins} wins</strong>
+                            <strong>
+                                {item.numOfWins !== 1
+                                    ? `${item.numOfWins} wins`
+                                    : `1 win`}
+                            </strong>
                         </div>
                     </li>
                 ))}

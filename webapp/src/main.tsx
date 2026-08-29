@@ -53,7 +53,7 @@ createRoot(document.getElementById('root')!).render(
             path="/statistics"
             element={
               <ProtectedRoute>
-                <StatisticsPage uid='10' />
+                <StatisticsPage />
               </ProtectedRoute>
             }
           />

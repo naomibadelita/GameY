@@ -6,27 +6,37 @@ import { loadProfile } from '../data/profile.loader';
 import { loadPageOfMatches, loadStatistic } from '../data/statistics.loader';
 import './StatisticsPage.css';
 
-interface StatisticsPageParams { readonly uid: string; }
-export default function StatisticsPage({ uid }: StatisticsPageParams) {
+export default function StatisticsPage() {
     const navigate = useNavigate();
 
+    const user = JSON.parse(localStorage.getItem('user') ?? 'undefined');
+    const uid = user?.userId ?? '0';
+
+    const [error, setError] = useState('');
     const [profile, setProfile] = useState<Profile | undefined>(undefined);
     const [statistics, setStatistics] = useState<StatisticsData | undefined>(undefined);
 
     const [page, setPage] = useState<number>(0);
     const [history, setHistory] = useState<MatchData[]>([]);
-    const loadHistoryPage = async () => {
-        console.log('Try to load!');
+    const loadHistoryPage = () => {
         if (page === -1) return;
-        const newData = await loadPageOfMatches(uid, page, 10);
-        setHistory([...history, ...newData]);
-        const newPage = newData.length === 0 ? -1 : page + 1;
-        setPage(newPage);
+        loadPageOfMatches(uid, page, 10)
+            .then((newData) => {
+                setHistory([...history, ...newData]);
+                console.log(`history: ${JSON.stringify(history)}`);
+                const newPage = newData.length === 0 ? -1 : page + 1;
+                setPage(newPage);
+            })
+            .catch((err) => setError(err instanceof Error ? err.message : 'An error occurred'));
     };
 
-    const init = async () => {
-        setProfile(await loadProfile(uid));
-        setStatistics(await loadStatistic(uid));
+    const init = () => {
+        void loadProfile(uid)
+            .then((data) => setProfile(data))
+            .catch((err) => setError(err instanceof Error ? err.message : 'An error occurred'));
+        void loadStatistic(uid)
+            .then((data) => setStatistics(data))
+            .catch((err) => setError(err instanceof Error ? err.message : 'An error occurred'));
         loadHistoryPage();
     }
 
@@ -94,6 +104,26 @@ export default function StatisticsPage({ uid }: StatisticsPageParams) {
         );
     }
 
+    const renderContent = () => {
+        if (error) {
+            return <div className="leaderboard-error">{error}</div>;
+        }
+
+        return (
+            <div className="history-section">
+                <h2>Match history</h2>
+
+                <ul className="history-list">
+                    {history.map((element, index) => renderMatch(element, index))}
+                    {history.length === 0 && (
+                        <li className="history-empty">No match history yet.</li>
+                    )}
+                    <li ref={loaderRef} className="history-loader" aria-hidden="true" />
+                </ul>
+            </div>
+        );
+    }
+
     return (
         <main className="statistics-page">
             <section className="statistics-card">
@@ -114,17 +144,7 @@ export default function StatisticsPage({ uid }: StatisticsPageParams) {
                     </div>
                 </header>
 
-                <div className="history-section">
-                    <h2>Match history</h2>
-
-                    <ul className="history-list">
-                        {history.map((element, index) => renderMatch(element, index))}
-                        {history.length === 0 && (
-                            <li className="history-empty">Loading match history...</li>
-                        )}
-                        <li ref={loaderRef} className="history-loader" aria-hidden="true" />
-                    </ul>
-                </div>
+                {renderContent()}
 
                 <button
                     type="button"
