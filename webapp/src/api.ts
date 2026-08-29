@@ -1,4 +1,5 @@
 import type { BoardState } from "../../shared/CellValue";
+import type { LeaderboardCategory, LeaderboardMetric } from "./leaderboard/domain/leaderboard.types";
 import type { Profile } from "./statistics/domain/profile.entity";
 import type { MatchData, StatisticsData } from "./statistics/domain/statistics.entity";
 
@@ -62,7 +63,7 @@ export async function saveGame(id: string, board: BoardState, currentPlayer: str
   return handleResponse(response);
 }
 
-export async function loadLeaderboard(category: string, metric: string) {
+export async function loadLeaderboard(category: LeaderboardCategory, metric: LeaderboardMetric) {
   const response = await fetch(`${API_BASE}/leaderboard/${encodeURIComponent(category)}/${encodeURIComponent(metric)}`, {
     method: 'GET',
     headers: getAuthHeaders(),

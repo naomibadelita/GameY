@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loadLeaderboardData } from '../data/leaderboard.loader';
 import type { LeaderboardData } from '../domain/leaderboard.entity';
-import type { LeaderboardCategory } from '../domain/leaderboard.types';
+import { isLeaderboardCategory, type LeaderboardCategory } from '../domain/leaderboard.types';
 import './leaderboard.css';
 
 function Leaderboard() {
@@ -70,10 +70,14 @@ function Leaderboard() {
                 <h1>Leaderboard</h1>
 
                 <label className="leaderboard-category">
-                    Category
+                    <span>Category</span>
                     <select
                         value={category}
-                        onChange={(event) => setCategory(event.target.value as LeaderboardCategory)}
+                        onChange={(event) => {
+                            const { value } = event.target;
+                            if (!isLeaderboardCategory(value)) return;
+                            setCategory(value);
+                        }}
                     >
                         <option value="all">All</option>
                         <option value="6">6x6</option>
