@@ -10,6 +10,13 @@ const router = express.Router();
 const db = new sqlite3.Database(path.join(__dirname, 'gameys.db'));
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
+class HttpError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}
+
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -287,16 +294,15 @@ router.get('/leaderboard/:category/:metric', verifyToken, (req, res) => {
 });
 
 /// Public profile
-
 async function loadProfile(uid) {
   return new Promise((resolve, reject) => {
     db.get('SELECT * FROM users WHERE id = ?', [uid], (err, row) => {
       if (err) {
-        reject({ status: 500, error: err.message });
+        reject(new HttpError(500, err.message));
         return;
       }
       if (!row) {
-        reject({ status: 404, error: 'User not found' });
+        reject(new HttpError(404, 'User not found'));
         return;
       }
       resolve({
@@ -311,7 +317,9 @@ router.get('/profile/:uid', verifyToken, async (req, res) => {
   try {
     res.json(await loadProfile(uid));
   } catch (err) {
-    res.status(err.status).json(err.error);
+    const status = err instanceof HttpError ? err.status : 500;
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    res.status(status).json(message);
   }
 });
 
