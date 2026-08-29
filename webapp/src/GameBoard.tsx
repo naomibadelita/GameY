@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { validateUuid, createGame, saveGame } from './api';
 import './GameBoard.css';
-import { boardAtom, isGameReadyAtom, isP1TurnAtom, myColorAtom, winnerAtom } from './Atoms';
+import { boardAtom, isGameReadyAtom, isP1TurnAtom, myColorAtom, roomIdAtom, winnerAtom, opponentDisplayNameAtom } from './Atoms';
 import { useAtomValue } from 'jotai'
 import { normalizeBoardForSize } from '../../shared/CellValue';
 import { ws } from './Connection';
+import { useAuth } from './Auth';
 
 interface GameBoardProps {
     readonly boardSize: number;
@@ -17,6 +18,9 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
     const isGameReady = useAtomValue(isGameReadyAtom);
     const winner = useAtomValue(winnerAtom);
     const color = useAtomValue(myColorAtom);
+    const roomId = useAtomValue(roomIdAtom);
+    const opponentDisplayName = useAtomValue(opponentDisplayNameAtom);
+    const { user } = useAuth();
     const [gameId, setGameId] = useState<string | null>(null);
     const safeBoard = normalizeBoardForSize(board, boardSize);
 
@@ -58,7 +62,8 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
             type: 'move',
             x: x,
             y: y,
-            color: color
+            color: color,
+            roomId: roomId,
         });
         console.log(`MSG: ${msg}`);
         ws.send(msg);
@@ -102,13 +107,15 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
         return rows;
     };
 
-    const winner_text = winner === 'B'
-        ? 'Blue Player'
-        : 'Red Player';
+    const currentPlayerName = user?.displayName ?? 'You';
+    const otherPlayerName = opponentDisplayName ?? 'Opponent';
+    const winner_text = winner === color
+        ? currentPlayerName
+        : otherPlayerName;
 
-    const turn_text = isP1Turn
-        ? 'Blue Player'
-        : 'Red Player';
+    const turn_text = isP1Turn === (color === 'B')
+        ? currentPlayerName
+        : otherPlayerName;
 
     const in_game_text = winner !== '.'
         ? `Winner: ${winner_text}`
@@ -120,7 +127,14 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
 
     return (
         <div className="game-board-container">
-            <h3> {header_text} </h3>
+            {isGameReady ? (
+                <div className="game-player-summary">
+                    <p>{currentPlayerName}</p>
+                    <span aria-hidden="true">vs</span>
+                    <p>{otherPlayerName}</p>
+                </div>
+            ) : null}
+            <h3>{header_text}</h3>
 
             <div className="board-relative">
 

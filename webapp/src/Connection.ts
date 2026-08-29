@@ -1,6 +1,6 @@
 import { getDefaultStore } from "jotai";
 import { type CellValue } from "../../shared/CellValue";
-import { boardAtom, isGameReadyAtom, isP1TurnAtom, winnerAtom, myColorAtom } from "./Atoms";
+import { boardAtom, isGameReadyAtom, isP1TurnAtom, winnerAtom, myColorAtom, roomIdAtom, connectionErrorAtom, opponentDisplayNameAtom } from "./Atoms";
 
 const getWebSocketUrl = (): string => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -31,24 +31,67 @@ const store = getDefaultStore();
 const url = getWebSocketUrl();
 console.log(`URL: ${url}`)
 export const ws = new WebSocket(url);
-ws.onmessage = (ev) => {
-    const data = JSON.parse(ev.data);
-    switch (data.type) {
-        case 'update':
-            console.log("UPDATE!");
-            store.set(boardAtom, deserializeBoard(data.board));
-            store.set(isP1TurnAtom, data.isP1Turn);
-            store.set(winnerAtom, data.winner);
-            break;
 
-        case 'init':
-            if (store.get(myColorAtom) === '.') {
-                store.set(myColorAtom, data.myColor);
-            }
-            break;
+type ServerMessage = {
+    type?: 'update' | 'init' | 'status';
+    board?: string;
+    isP1Turn?: boolean;
+    winner?: CellValue;
+    myColor?: CellValue;
+    opponentDisplayName?: string;
+    isGameReady?: boolean;
+    error?: string;
+    roomId?: string | null;
+};
 
-        case 'status':
-            store.set(isGameReadyAtom, data.isGameReady);
-            break;
+function setRoomId(roomId: string | null | undefined) {
+    if (roomId) {
+        store.set(roomIdAtom, roomId);
     }
+}
+
+function handleUpdate(data: ServerMessage) {
+    if (typeof data.board !== 'string') {
+        return;
+    }
+
+    console.log("UPDATE!");
+    store.set(boardAtom, deserializeBoard(data.board));
+    store.set(isP1TurnAtom, Boolean(data.isP1Turn));
+    store.set(winnerAtom, data.winner ?? '.');
+    setRoomId(data.roomId);
+}
+
+function handleInit(data: ServerMessage) {
+    if (data.myColor) {
+        store.set(myColorAtom, data.myColor);
+    }
+    if (typeof data.opponentDisplayName === 'string') {
+        store.set(opponentDisplayNameAtom, data.opponentDisplayName);
+    }
+    setRoomId(data.roomId);
+}
+
+function handleStatus(data: ServerMessage) {
+    store.set(isGameReadyAtom, Boolean(data.isGameReady));
+    if (!data.isGameReady) {
+        store.set(opponentDisplayNameAtom, null);
+    }
+    store.set(connectionErrorAtom, data.error ?? null);
+    setRoomId(data.roomId);
+}
+
+const messageHandlers: Record<'update' | 'init' | 'status', (data: ServerMessage) => void> = {
+    update: handleUpdate,
+    init: handleInit,
+    status: handleStatus,
+};
+
+ws.onmessage = (ev) => {
+    const data = JSON.parse(ev.data) as ServerMessage;
+    if (!data.type) {
+        return;
+    }
+
+    messageHandlers[data.type](data);
 };

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useSetAtom } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { useAuth } from './Auth';
 import './App.css'
 import GameBoard from './GameBoard';
 import GameOver from './GameOver';
-import { boardAtom, isP1TurnAtom, winnerAtom } from './Atoms';
+import { boardAtom, connectionErrorAtom, isP1TurnAtom, opponentDisplayNameAtom, winnerAtom } from './Atoms';
 import { createInitialBoard } from '../../shared/CellValue';
 import { ws } from './Connection';
 
@@ -21,17 +21,22 @@ function App() {
     const setBoard = useSetAtom(boardAtom);
     const setIsP1Turn = useSetAtom(isP1TurnAtom);
     const setBoardWinner = useSetAtom(winnerAtom);
+    const setOpponentDisplayName = useSetAtom(opponentDisplayNameAtom);
+    const connectionError = useAtomValue(connectionErrorAtom);
 
     useEffect(() => {
         setBoard(createInitialBoard(safeBoardSize));
         setIsP1Turn(true);
         setBoardWinner('.');
+        setOpponentDisplayName(null);
         setGameState('playing');
         setWinner(null);
 
         ws.send(JSON.stringify({
-            type: 'setup',
+            type: 'join_lobby',
             boardSize: safeBoardSize,
+            userId: user?.userId ?? null,
+          displayName: user?.displayName ?? null,
         }));
     }, [safeBoardSize, setBoard, setIsP1Turn, setBoardWinner]);
 
@@ -47,6 +52,15 @@ function App() {
   };
 
   const handlePlayAgain = () => {
+    ws.send(JSON.stringify({
+      type: 'leave_room',
+      userId: user?.userId ?? null,
+    }));
+    setBoard(createInitialBoard(safeBoardSize));
+    setIsP1Turn(true);
+    setBoardWinner('.');
+    setWinner(null);
+    setGameState('playing');
     navigate('/board-size');
   };
 
@@ -65,6 +79,12 @@ function App() {
           <button type="button" className="logout-btn" onClick={handleLogout}>Logout</button>
         </div>
       </div>
+      {connectionError ? (
+        <div className="status-error" style={{ color: '#ffb4b4', margin: '12px 0', fontWeight: 600 }}>
+          {connectionError}
+        </div>
+      ) : null}
+
       {gameState === 'playing' ? (
         <GameBoard boardSize={safeBoardSize} onGameOver={handleGameOver} />
       ) : (

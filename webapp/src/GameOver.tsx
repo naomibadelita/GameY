@@ -1,4 +1,7 @@
 import './GameOver.css';
+import { useAuth } from './Auth';
+import { useAtomValue } from 'jotai';
+import { myColorAtom, opponentDisplayNameAtom } from './Atoms';
 
 interface GameOverProps {
     readonly winner: 'B' | 'R';
@@ -6,9 +9,12 @@ interface GameOverProps {
 }
 
 export default function GameOver({ winner, onPlayAgain }: GameOverProps) {
-    const winner_text = winner === 'B'
-        ? 'Blue Player'
-        : 'Red Player';
+    const { user } = useAuth();
+    const myColor = useAtomValue(myColorAtom);
+    const opponentDisplayName = useAtomValue(opponentDisplayNameAtom);
+    const winner_text = winner === myColor
+        ? (user?.displayName ?? 'You')
+        : (opponentDisplayName ?? 'Opponent');
 
     return (
         <div className="game-over-page">

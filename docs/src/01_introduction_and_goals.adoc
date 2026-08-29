@@ -5,7 +5,7 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 === Requirements
 
-The purpose of this project is to develop a full-stack web application for a game named YOVI, communicating human players and automated agents. The following specifications must be in the final version of the aplication:
+The purpose of this project is to develop a full-stack web application for a game named Y, communicating human players and automated agents. The following specifications must be in the final version of the aplication:
 
 ==== User Management
 [cols="1,4"]
@@ -24,11 +24,23 @@ The purpose of this project is to develop a full-stack web application for a gam
 |===
 | ID | Description
 | FR-04
-| The frontend shall implement the "Classic Version" of Game Y in a Player-vs-Machine (AI) mode.
+| The frontend should implement the "Classic Version" of Game Y in a Player-vs-Machine (AI) mode.
 | FR-05
 | The system must support variable board sizes, allowing the player to define the dimensions before starting the game.
 | FR-06
 | The UI should allow the player to select from multiple game strategies or difficulty levels provided by the AI.
-| FR-07
-| The frontend shall visualize the board using the coordinate systems (Barycentric or Index-based) defined in the YEN notation.
 |===
+
+
+==== Game Engine (Python Module)
+[cols="1,4"]
+|===
+| ID | Description 
+| FR-08
+| The module shall provide a real-time game interface for receiving player moves, updating the board state, and broadcasting the resulting game state to connected clients.
+| FR-09
+| The game engine shall validate the current board state after each move and determine whether the match has been won or continues in progress.
+| FR-10
+| The engine shall implement at least two distinct move-generation strategies for the AI and select the appropriate strategy based on the current game state.
+|===
+

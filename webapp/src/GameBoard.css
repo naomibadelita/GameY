@@ -13,6 +13,24 @@
     margin-bottom: 20px;
 }
 
+.game-player-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #333;
+    font-weight: 600;
+}
+
+.game-player-summary p {
+    margin: 0;
+}
+
+.game-player-summary span {
+    color: #666;
+    font-size: 0.85rem;
+    font-weight: 400;
+}
+
 /* NOU: Containerul relativ care ține straturile și umbra exterioară */
 .board-relative {
     position: relative;
