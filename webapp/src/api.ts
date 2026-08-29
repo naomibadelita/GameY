@@ -28,12 +28,12 @@ function getAuthHeaders() {
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export function validateGameId(id: string): string {
-  if (!UUID_PATTERN.test(id)) {
-    throw new Error('Invalid game ID');
+export function validateUuid(uuid: string): string {
+  if (!UUID_PATTERN.test(uuid)) {
+    throw new Error('Invalid UUID');
   }
 
-  return id;
+  return uuid;
 }
 
 export async function createGame(board: BoardState, currentPlayer = 'B', status = 'in-progress') {
@@ -46,7 +46,7 @@ export async function createGame(board: BoardState, currentPlayer = 'B', status 
 }
 
 export async function loadGame(id: string) {
-  const validId = validateGameId(id);
+  const validId = validateUuid(id);
   const response = await fetch(`${API_BASE}/game/${encodeURIComponent(validId)}`, {
     headers: getAuthHeaders(),
   });
@@ -54,7 +54,7 @@ export async function loadGame(id: string) {
 }
 
 export async function saveGame(id: string, board: BoardState, currentPlayer: string, status: string) {
-  const validId = validateGameId(id);
+  const validId = validateUuid(id);
   const response = await fetch(`${API_BASE}/game/${encodeURIComponent(validId)}`, {
     method: 'POST',
     headers: getAuthHeaders(),
@@ -72,7 +72,8 @@ export async function loadLeaderboard(category: LeaderboardCategory, metric: Lea
 }
 
 export async function loadProfile(uid: string): Promise<Profile> {
-  const response = await fetch(`${API_BASE}/profile/${encodeURIComponent(uid)}`, {
+  const validUid = validateUuid(uid);
+  const response = await fetch(`${API_BASE}/profile/${encodeURIComponent(validUid)}`, {
     method: 'GET',
     headers: getAuthHeaders(),
   });
@@ -81,7 +82,8 @@ export async function loadProfile(uid: string): Promise<Profile> {
 }
 
 export async function loadStatistics(uid: string): Promise<StatisticsData> {
-  const response = await fetch(`${API_BASE}/statistics/${encodeURIComponent(uid)}`, {
+  const validUid = validateUuid(uid);
+  const response = await fetch(`${API_BASE}/statistics/${encodeURIComponent(validUid)}`, {
     method: 'GET',
     headers: getAuthHeaders(),
   });
@@ -90,7 +92,8 @@ export async function loadStatistics(uid: string): Promise<StatisticsData> {
 }
 
 export async function loadHistory(uid: string, page: number, limit: number): Promise<MatchData[]> {
-  const response = await fetch(`${API_BASE}/history/${encodeURIComponent(uid)}/${page}/${limit}`, {
+  const validUid = validateUuid(uid);
+  const response = await fetch(`${API_BASE}/history/${encodeURIComponent(validUid)}/${page}/${limit}`, {
     method: 'GET',
     headers: getAuthHeaders(),
   });

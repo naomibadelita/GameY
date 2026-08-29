@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { validateGameId, createGame, saveGame } from './api';
+import { validateUuid, createGame, saveGame } from './api';
 import './GameBoard.css';
 import { boardAtom, isGameReadyAtom, isP1TurnAtom, myColorAtom, winnerAtom } from './Atoms';
 import { useAtomValue } from 'jotai'
@@ -25,7 +25,7 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
         const startNewGame = async () => {
             try {
                 const response = await createGame(safeBoard, 'B', 'in-progress');
-                setGameId(validateGameId(response.id));
+                setGameId(validateUuid(response.id));
             } catch (error) {
                 console.error('Failed to create game:', error);
             }

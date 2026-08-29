@@ -9,8 +9,9 @@ import './StatisticsPage.css';
 export default function StatisticsPage() {
     const navigate = useNavigate();
 
-    const user = JSON.parse(localStorage.getItem('user') ?? 'undefined');
-    const uid = user?.userId ?? '0';
+    const storedUser = localStorage.getItem('user');
+    const user = storedUser ? JSON.parse(storedUser) : undefined;
+    const uid = typeof user?.userId === 'string' ? user.userId : undefined;
 
     const [error, setError] = useState('');
     const [profile, setProfile] = useState<Profile | undefined>(undefined);
@@ -20,6 +21,11 @@ export default function StatisticsPage() {
     const [history, setHistory] = useState<MatchData[]>([]);
     const loadHistoryPage = () => {
         if (page === -1) return;
+        if (!uid) {
+            setError('User authentication failed.');
+            return;
+        }
+
         loadPageOfMatches(uid, page, 10)
             .then((newData) => {
                 setHistory([...history, ...newData]);
@@ -31,6 +37,11 @@ export default function StatisticsPage() {
     };
 
     const init = () => {
+        if (!uid) {
+            setError('User authentication failed.');
+            return;
+        }
+
         void loadProfile(uid)
             .then((data) => setProfile(data))
             .catch((err) => setError(err instanceof Error ? err.message : 'An error occurred'));
