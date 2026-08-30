@@ -19,6 +19,7 @@ function App() {
     const [gameState, setGameState] = useState<'playing' | 'over'>('playing');
     const [winner, setWinner] = useState<'B' | 'R' | null>(null);
     const [eloBefore, setEloBefore] = useState<number | null>(null);
+    const [eloAfter, setEloAfter] = useState<number | null>(null);
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const setBoard = useSetAtom(boardAtom);
@@ -32,6 +33,7 @@ function App() {
     const connectionError = useAtomValue(connectionErrorAtom);
     const serverBoardSize = useAtomValue(boardSizeAtom);
     const roomId = useAtomValue(roomIdAtom);
+    const opponentId = useAtomValue(opponentIdAtom);
     const activeBoardSize = gameId && gameId !== 'new' ? serverBoardSize : safeBoardSize;
 
     useEffect(() => {
@@ -55,6 +57,7 @@ function App() {
         setOpponentId(null);
         setGameState('playing');
         setWinner(null);
+        setEloAfter(null);
 
         const isPrivateGame = Boolean(gameId);
         let messageType = 'join_lobby';
@@ -88,6 +91,11 @@ function App() {
   const handleGameOver = (winnerColor: 'B' | 'R') => {
     setWinner(winnerColor);
     setGameState('over');
+    if (user?.userId && opponentId) {
+      void loadStatistics(user.userId)
+        .then((statistics) => setEloAfter(statistics.elo))
+        .catch((error) => console.error('Failed to load updated ELO:', error));
+    }
   };
 
   const handlePlayAgain = () => {
@@ -97,6 +105,8 @@ function App() {
     setBoardWinner('.');
     setIsGameReady(false);
     setWinner(null);
+    setEloBefore(eloAfter ?? eloBefore);
+    setEloAfter(null);
     setGameState('playing');
   };
 
@@ -124,7 +134,7 @@ function App() {
       {gameState === 'playing' ? (
         <GameBoard boardSize={activeBoardSize} onGameOver={handleGameOver} />
       ) : (
-        <GameOver winner={winner!} eloBefore={eloBefore} onPlayAgain={handlePlayAgain} />
+        <GameOver winner={winner!} eloBefore={eloBefore} eloAfter={eloAfter} onPlayAgain={handlePlayAgain} />
       )}
     </div>
   );

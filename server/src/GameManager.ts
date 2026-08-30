@@ -120,20 +120,20 @@ export class GameManager implements ISubscriber {
     }
 
     private onWin(room: RoomState) {
-        gameyApiRouter.saveFinishedGame(
+        return gameyApiRouter.saveFinishedGame(
             room.board.rows.map((row) => row.map((node) => node.color)),
             room.currentPlayer,
             room.players,
         );
     }
 
-    private onMove(room: RoomState, data: any) {
+    private async onMove(room: RoomState, data: any) {
         const result = room.board.placePiece(data.y, data.x, data.color);
         if (result === MoveResult.OCCUPIED) return;
 
         this.changeCurrentPlayer(room);
         const winner = result === MoveResult.VICTORY ? data.color : '.';
-        if (result === MoveResult.VICTORY) this.onWin(room);
+        if (result === MoveResult.VICTORY) await this.onWin(room);
 
         const message = {
             type: 'update',

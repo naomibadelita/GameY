@@ -249,23 +249,27 @@ function updateElo(userId, opponentId, hasWon, callback) {
 }
 
 function saveFinishedGame(board, currentPlayer, players) {
-  const now = Date.now();
-  players.filter((player) => player.userId).forEach((player) => {
-    const opponent = players.find((item) => item.color !== player.color);
-    const hasWon = player.color !== currentPlayer;
-    db.run(
-      'INSERT INTO games (id, userId, opponentId, isPlayer1, board, currentPlayer, status, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [randomUUID(), player.userId, opponent?.userId ?? null, player.color === 'B', JSON.stringify(board), currentPlayer, 'finished', now]
-    );
-    db.run(
-      'UPDATE users SET matchesPlayed = matchesPlayed + 1, matchesWon = matchesWon + ?, lastActive = ? WHERE id = ?',
-      [hasWon ? 1 : 0, now, player.userId]
-    );
-  });
+  return new Promise((resolve) => {
+    const now = Date.now();
+    players.filter((player) => player.userId).forEach((player) => {
+      const opponent = players.find((item) => item.color !== player.color);
+      const hasWon = player.color !== currentPlayer;
+      db.run(
+        'INSERT INTO games (id, userId, opponentId, isPlayer1, board, currentPlayer, status, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [randomUUID(), player.userId, opponent?.userId ?? null, player.color === 'B', JSON.stringify(board), currentPlayer, 'finished', now]
+      );
+      db.run(
+        'UPDATE users SET matchesPlayed = matchesPlayed + 1, matchesWon = matchesWon + ?, lastActive = ? WHERE id = ?',
+        [hasWon ? 1 : 0, now, player.userId]
+      );
+    });
 
-  if (players[0]?.userId && players[1]?.userId) {
-    updateElo(players[0].userId, players[1].userId, players[0].color !== currentPlayer, () => {});
-  }
+    if (players[0]?.userId && players[1]?.userId) {
+      updateElo(players[0].userId, players[1].userId, players[0].color !== currentPlayer, resolve);
+    } else {
+      resolve();
+    }
+  });
 }
 
 router.post('/game/:id', verifyToken, (req, res) => {
