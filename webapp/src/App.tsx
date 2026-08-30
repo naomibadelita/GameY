@@ -20,7 +20,7 @@ function App() {
     const [winner, setWinner] = useState<'B' | 'R' | null>(null);
     const [eloBefore, setEloBefore] = useState<number | null>(null);
     const [eloAfter, setEloAfter] = useState<number | null>(null);
-    const { user, logout } = useAuth();
+    const { user, isLoading, logout } = useAuth();
     const navigate = useNavigate();
     const setBoard = useSetAtom(boardAtom);
     const setIsP1Turn = useSetAtom(isP1TurnAtom);
@@ -47,6 +47,8 @@ function App() {
     }, [user?.userId]);
 
     useEffect(() => {
+        if (isLoading) return;
+
         setBoard(createInitialBoard(activeBoardSize));
         setIsP1Turn(true);
         setBoardWinner('.');
@@ -74,7 +76,7 @@ function App() {
             userId: user?.userId ?? null,
             displayName: user?.displayName ?? 'Guest',
         });
-    }, [gameId, activeBoardSize, setBoard, setIsP1Turn, setBoardWinner, setIsGameReady, setMyColor, setRoomId, setOpponentDisplayName, setOpponentId, user]);
+    }, [gameId, activeBoardSize, setBoard, setIsP1Turn, setBoardWinner, setIsGameReady, setMyColor, setRoomId, setOpponentDisplayName, setOpponentId, user, isLoading]);
 
     useEffect(() => {
         if (gameId === 'new' && roomId) {
