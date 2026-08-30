@@ -8,6 +8,7 @@ import GameOver from './GameOver';
 import { boardAtom, connectionErrorAtom, isGameReadyAtom, isP1TurnAtom, myColorAtom, opponentDisplayNameAtom, opponentIdAtom, roomIdAtom, winnerAtom } from './Atoms';
 import { createInitialBoard } from '../../shared/CellValue';
 import { ws } from './Connection';
+import { loadStatistics } from './api';
 
 function App() {
     const location = useLocation();
@@ -16,6 +17,7 @@ function App() {
     const safeBoardSize = Number.isFinite(selectedBoardSize) && selectedBoardSize > 1 ? selectedBoardSize : 8;
     const [gameState, setGameState] = useState<'playing' | 'over'>('playing');
     const [winner, setWinner] = useState<'B' | 'R' | null>(null);
+    const [eloBefore, setEloBefore] = useState<number | null>(null);
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const setBoard = useSetAtom(boardAtom);
@@ -27,6 +29,16 @@ function App() {
     const setOpponentDisplayName = useSetAtom(opponentDisplayNameAtom);
     const setOpponentId = useSetAtom(opponentIdAtom);
     const connectionError = useAtomValue(connectionErrorAtom);
+
+    useEffect(() => {
+        if (!user?.userId) {
+            return;
+        }
+
+        void loadStatistics(user.userId)
+            .then((statistics) => setEloBefore(statistics.elo))
+            .catch((error) => console.error('Failed to load ELO:', error));
+    }, [user?.userId]);
 
     useEffect(() => {
         setBoard(createInitialBoard(safeBoardSize));
@@ -101,7 +113,7 @@ function App() {
       {gameState === 'playing' ? (
         <GameBoard boardSize={safeBoardSize} onGameOver={handleGameOver} />
       ) : (
-        <GameOver winner={winner!} onPlayAgain={handlePlayAgain} />
+        <GameOver winner={winner!} eloBefore={eloBefore} onPlayAgain={handlePlayAgain} />
       )}
     </div>
   );

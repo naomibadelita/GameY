@@ -51,7 +51,8 @@ db.serialize(() => {
       lastActive INTEGER NOT NULL,
 
       matchesPlayed INTEGER NOT NULL,
-      matchesWon INTEGER NOT NULL
+      matchesWon INTEGER NOT NULL,
+      elo INTEGER NOT NULL DEFAULT 1600
     )
   `);
 
@@ -205,6 +206,48 @@ router.get('/game/:id', verifyToken, (req, res) => {
   });
 });
 
+function updateElo(userId, opponentId, hasWon, callback) {
+  db.all(
+    'SELECT id, elo FROM users WHERE id IN (?, ?)',
+    [userId, opponentId],
+    (selectError, users) => {
+      if (selectError) {
+        callback(selectError);
+        return;
+      }
+
+      const user = users.find((item) => item.id === userId);
+      const opponent = users.find((item) => item.id === opponentId);
+      if (!user || !opponent) {
+        callback(new Error('Player not found'));
+        return;
+      }
+
+      const expectedScore = 1 / (1 + Math.pow(10, (opponent.elo - user.elo) / 400));
+      const actualScore = hasWon ? 1 : 0;
+      const ratingChange = Math.round(32 * (actualScore - expectedScore));
+
+      db.run(
+        `UPDATE users
+         SET elo = CASE id
+           WHEN ? THEN ?
+           WHEN ? THEN ?
+         END
+         WHERE id IN (?, ?)`,
+        [
+          userId,
+          user.elo + ratingChange,
+          opponentId,
+          opponent.elo - ratingChange,
+          userId,
+          opponentId,
+        ],
+        callback
+      );
+    }
+  );
+}
+
 router.post('/game/:id', verifyToken, (req, res) => {
   const { id } = req.params;
   const { board, opponentId, isPlayer1, currentPlayer, status } = req.body;
@@ -224,6 +267,7 @@ router.post('/game/:id', verifyToken, (req, res) => {
       if (this.changes === 0) {
         return res.status(404).json({ error: 'Game not found' });
       }
+      // TODO: Move the winning behavior in the server.
       if (status === 'finished') {
         const hasWon = (isPlayer1 && currentPlayer === 'R') ||
           (!isPlayer1 && currentPlayer === 'B');
@@ -239,7 +283,16 @@ router.post('/game/:id', verifyToken, (req, res) => {
             if (userError) {
               return res.status(500).json({ error: userError.message });
             }
-            res.json({ id, board, currentPlayer, status, updatedAt: now });
+            if (!isPlayer1 || !opponentId) {
+              return res.json({ id, board, currentPlayer, status, updatedAt: now });
+            }
+
+            updateElo(req.userId, opponentId, hasWon, (eloError) => {
+              if (eloError) {
+                return res.status(500).json({ error: eloError.message });
+              }
+              res.json({ id, board, currentPlayer, status, updatedAt: now });
+            });
           }
         );
       }
@@ -381,7 +434,7 @@ function getUserGames(uid, page = 0, limit = -1) {
 function loadStatistics(uid) {
   return new Promise((resolve, reject) => {
     db.get(
-      'SELECT matchesPlayed, matchesWon FROM users WHERE id = ?',
+      'SELECT matchesPlayed, matchesWon, elo FROM users WHERE id = ?',
       [uid],
       (err, row) => {
         if (err) {
@@ -393,7 +446,7 @@ function loadStatistics(uid) {
           return;
         }
         resolve({
-          elo: 1600,
+          elo: row.elo,
           matchesPlayed: row.matchesPlayed,
           matchesWon: row.matchesWon,
           timePlayed: 0,

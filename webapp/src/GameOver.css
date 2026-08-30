@@ -50,9 +50,27 @@
 
 .game-over-winner {
     font-size: 36px;
-    margin: 0 0 50px 0;
+    margin: 0 0 12px 0;
     color: #fff;
     text-shadow: 2px 2px 8px rgba(241, 239, 243, 0.3);
+}
+
+.game-over-winner-spaced {
+    margin-bottom: 50px;
+}
+
+.game-over-elo {
+    margin: 0 0 50px;
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.game-over-elo-increased {
+    color: #79e6a5;
+}
+
+.game-over-elo-decreased {
+    color: #ff9b9b;
 }
 
 .play-again-btn {
