@@ -43,8 +43,15 @@ db.serialize(() => {
       id TEXT PRIMARY KEY,
       email TEXT UNIQUE NOT NULL,
       passwordHash TEXT NOT NULL,
+
       displayName TEXT NOT NULL,
-      createdAt INTEGER NOT NULL
+      photoUrl TEXT,
+
+      createdAt INTEGER NOT NULL,
+      lastActive INTEGER NOT NULL,
+
+      matchesPlayed INTEGER NOT NULL,
+      matchesWon INTEGER NOT NULL
     )
   `);
 
@@ -52,6 +59,9 @@ db.serialize(() => {
     CREATE TABLE IF NOT EXISTS games (
       id TEXT PRIMARY KEY,
       userId TEXT NOT NULL,
+      opponentId TEXT,
+      isPlayer1 INTEGER NOT NULL,
+
       board TEXT NOT NULL,
       currentPlayer TEXT NOT NULL,
       status TEXT NOT NULL,
@@ -81,8 +91,8 @@ router.post('/register', (req, res) => {
 
     const now = Date.now();
     db.run(
-      'INSERT INTO users (id, email, passwordHash, displayName, createdAt) VALUES (?, ?, ?, ?, ?)',
-      [userId, email, passwordHash, displayName, now],
+      'INSERT INTO users (id, email, passwordHash, displayName, createdAt, lastActive, matchesPlayed, matchesWon) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [userId, email, passwordHash, displayName, now, now, 0, 0],
       function (err) {
         if (err) {
           if (err.message.includes('UNIQUE constraint failed')) {
@@ -152,7 +162,7 @@ router.post('/login', (req, res) => {
 
 router.post('/game', verifyToken, (req, res) => {
   const id = randomUUID();
-  const { board, currentPlayer = 'B', status = 'in-progress' } = req.body;
+  const { board, isPlayer1, currentPlayer = 'B', status = 'in-progress' } = req.body;
 
   if (!board) {
     return res.status(400).json({ error: 'board is required' });
@@ -160,8 +170,8 @@ router.post('/game', verifyToken, (req, res) => {
 
   const now = Date.now();
   db.run(
-    'INSERT INTO games (id, userId, board, currentPlayer, status, updatedAt) VALUES (?, ?, ?, ?, ?, ?)',
-    [id, req.userId, JSON.stringify(board), currentPlayer, status, now],
+    'INSERT INTO games (id, userId, isPlayer1, board, currentPlayer, status, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [id, req.userId, isPlayer1, JSON.stringify(board), currentPlayer, status, now],
     function (err) {
       if (err) {
         return res.status(500).json({ error: err.message });
@@ -184,6 +194,9 @@ router.get('/game/:id', verifyToken, (req, res) => {
 
     res.json({
       id: row.id,
+      opponentId: row.opponentId,
+      isPlayer1: row.isPlayer1,
+
       board: JSON.parse(row.board),
       currentPlayer: row.currentPlayer,
       status: row.status,
@@ -194,7 +207,7 @@ router.get('/game/:id', verifyToken, (req, res) => {
 
 router.post('/game/:id', verifyToken, (req, res) => {
   const { id } = req.params;
-  const { board, currentPlayer, status } = req.body;
+  const { board, opponentId, isPlayer1, currentPlayer, status } = req.body;
 
   if (!board) {
     return res.status(400).json({ error: 'board is required' });
@@ -202,14 +215,33 @@ router.post('/game/:id', verifyToken, (req, res) => {
 
   const now = Date.now();
   db.run(
-    'UPDATE games SET board = ?, currentPlayer = ?, status = ?, updatedAt = ? WHERE id = ? AND userId = ?',
-    [JSON.stringify(board), currentPlayer, status, now, id, req.userId],
+    'UPDATE games SET board = ?, opponentId = ?, currentPlayer = ?, status = ?, updatedAt = ? WHERE id = ? AND userId = ?',
+    [JSON.stringify(board), opponentId, currentPlayer, status, now, id, req.userId],
     function (err) {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
       if (this.changes === 0) {
         return res.status(404).json({ error: 'Game not found' });
+      }
+      if (status === 'finished') {
+        const hasWon = (isPlayer1 && currentPlayer === 'R') ||
+          (!isPlayer1 && currentPlayer === 'B');
+
+        return db.run(
+          `UPDATE users
+         SET matchesPlayed = matchesPlayed + 1,
+             matchesWon = matchesWon + ?,
+             lastActive = ?
+         WHERE id = ?`,
+          [hasWon ? 1 : 0, now, req.userId],
+          function (userError) {
+            if (userError) {
+              return res.status(500).json({ error: userError.message });
+            }
+            res.json({ id, board, currentPlayer, status, updatedAt: now });
+          }
+        );
       }
       res.json({ id, board, currentPlayer, status, updatedAt: now });
     }
@@ -239,6 +271,12 @@ function getGamesData(processData, offset = 0, limit = -1) {
   });
 }
 
+function hasUserWon(game) {
+  const isPlayer1 = Boolean(game.isPlayer1);
+  return (isPlayer1 && game.currentPlayer === 'R') ||
+    (!isPlayer1 && game.currentPlayer === 'B');
+}
+
 async function replaceUidWithName(data) {
   return new Promise((resolve, reject) => {
     db.all('SELECT id, displayName FROM users', [], (usersError, users) => {
@@ -248,7 +286,7 @@ async function replaceUidWithName(data) {
       }
       const items = Object.fromEntries(
         users
-          .filter(user => data[user.id])
+          .filter(user => Object.hasOwn(data, user.id))
           .map(user => [user.displayName, data[user.id]])
       );
       resolve(items);
@@ -260,11 +298,8 @@ async function getLeaderboardByWins(res, category) {
   try {
     let items = await getGamesData((game, numOfWins = 0) => {
       const board = JSON.parse(game.board);
-      if (
-        game.currentPlayer === 'R' &&
-        category === 'all' ||
-        board.length === Number(category)
-      ) {
+      const isRequestedCategory = category === 'all' || board.length === Number(category);
+      if (isRequestedCategory && hasUserWon(game)) {
         return numOfWins + 1;
       }
       return numOfWins;
@@ -343,28 +378,68 @@ function getUserGames(uid, page = 0, limit = -1) {
   });
 }
 
+function loadStatistics(uid) {
+  return new Promise((resolve, reject) => {
+    db.get(
+      'SELECT matchesPlayed, matchesWon FROM users WHERE id = ?',
+      [uid],
+      (err, row) => {
+        if (err) {
+          reject(new HttpError(500, err.message));
+          return;
+        }
+        if (!row) {
+          reject(new HttpError(404, 'User not found'));
+          return;
+        }
+        resolve({
+          elo: 1600,
+          matchesPlayed: row.matchesPlayed,
+          matchesWon: row.matchesWon,
+          timePlayed: 0,
+        });
+      }
+    );
+  });
+}
+
 router.get('/statistics/:uid', verifyToken, async (req, res) => {
   const { uid } = req.params;
-  const games = await getUserGames(uid);
-  res.json({
-    elo: 1600,
-    matchesPlayed: games.length,
-    matchesWon: games.length,
-    timePlayed: 0,
-  });
+  try {
+    res.json(await loadStatistics(uid));
+  } catch (err) {
+    const status = err instanceof HttpError ? err.status : 500;
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    res.status(status).json({ error: message });
+  }
 });
 
 router.get('/history/:uid/:page/:limit', verifyToken, async (req, res) => {
   const { uid, page, limit } = req.params;
-  const games = await getUserGames(uid, page, limit);
-  const profile = await loadProfile(uid);
-  const result = games.map((game) => ({
-    player1: profile,
-    player2: { displayName: 'Anonymous' },
-    winner: 1,
-    boardSize: JSON.parse(game.board).length,
-  }));
-  res.json(result);
+  try {
+    const games = await getUserGames(uid, page, limit);
+    const profile = await loadProfile(uid);
+    const anonymousProfile = { displayName: 'Anonymous', photoUrl: undefined };
+    const result = await Promise.all(games.map(async (game) => {
+      const opponentProfile = game.opponentId
+        ? await loadProfile(game.opponentId)
+        : anonymousProfile;
+      const isPlayer1 = Boolean(game.isPlayer1);
+      const userWon = hasUserWon(game);
+
+      return {
+        player1: isPlayer1 ? profile : opponentProfile,
+        player2: isPlayer1 ? opponentProfile : profile,
+        winner: userWon === isPlayer1 ? 1 : 2,
+        boardSize: JSON.parse(game.board).length,
+      };
+    }));
+    res.json(result);
+  } catch (err) {
+    const status = err instanceof HttpError ? err.status : 500;
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    res.status(status).json({ error: message });
+  }
 });
 
 module.exports = router;

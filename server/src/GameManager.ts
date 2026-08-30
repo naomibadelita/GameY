@@ -188,6 +188,7 @@ export class GameManager implements ISubscriber {
                     type: 'init',
                     myColor: player.color,
                     opponentDisplayName: opponent?.displayName ?? 'Opponent',
+                    opponentId: opponent?.userId,
                     boardSize: room.boardSize,
                     roomId: room.id,
                 }));

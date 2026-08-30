@@ -1,6 +1,6 @@
 import { getDefaultStore } from "jotai";
 import { type CellValue } from "../../shared/CellValue";
-import { boardAtom, isGameReadyAtom, isP1TurnAtom, winnerAtom, myColorAtom, roomIdAtom, connectionErrorAtom, opponentDisplayNameAtom } from "./Atoms";
+import { boardAtom, isGameReadyAtom, isP1TurnAtom, winnerAtom, myColorAtom, roomIdAtom, connectionErrorAtom, opponentDisplayNameAtom, opponentIdAtom } from "./Atoms";
 
 const getWebSocketUrl = (): string => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -39,15 +39,14 @@ type ServerMessage = {
     winner?: CellValue;
     myColor?: CellValue;
     opponentDisplayName?: string;
+    opponentId?: string;
     isGameReady?: boolean;
     error?: string;
     roomId?: string | null;
 };
 
 function setRoomId(roomId: string | null | undefined) {
-    if (roomId) {
-        store.set(roomIdAtom, roomId);
-    }
+    store.set(roomIdAtom, roomId ?? null);
 }
 
 function handleUpdate(data: ServerMessage) {
@@ -69,6 +68,10 @@ function handleInit(data: ServerMessage) {
     if (typeof data.opponentDisplayName === 'string') {
         store.set(opponentDisplayNameAtom, data.opponentDisplayName);
     }
+    if (typeof data.opponentId === 'string') {
+        store.set(opponentIdAtom, data.opponentId);
+    }
+
     setRoomId(data.roomId);
 }
 
@@ -76,6 +79,7 @@ function handleStatus(data: ServerMessage) {
     store.set(isGameReadyAtom, Boolean(data.isGameReady));
     if (!data.isGameReady) {
         store.set(opponentDisplayNameAtom, null);
+        store.set(opponentIdAtom, null);
     }
     store.set(connectionErrorAtom, data.error ?? null);
     setRoomId(data.roomId);

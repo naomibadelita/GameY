@@ -5,7 +5,7 @@ import { useAuth } from './Auth';
 import './App.css'
 import GameBoard from './GameBoard';
 import GameOver from './GameOver';
-import { boardAtom, connectionErrorAtom, isP1TurnAtom, opponentDisplayNameAtom, winnerAtom } from './Atoms';
+import { boardAtom, connectionErrorAtom, isGameReadyAtom, isP1TurnAtom, myColorAtom, opponentDisplayNameAtom, opponentIdAtom, roomIdAtom, winnerAtom } from './Atoms';
 import { createInitialBoard } from '../../shared/CellValue';
 import { ws } from './Connection';
 
@@ -21,14 +21,22 @@ function App() {
     const setBoard = useSetAtom(boardAtom);
     const setIsP1Turn = useSetAtom(isP1TurnAtom);
     const setBoardWinner = useSetAtom(winnerAtom);
+    const setIsGameReady = useSetAtom(isGameReadyAtom);
+    const setMyColor = useSetAtom(myColorAtom);
+    const setRoomId = useSetAtom(roomIdAtom);
     const setOpponentDisplayName = useSetAtom(opponentDisplayNameAtom);
+    const setOpponentId = useSetAtom(opponentIdAtom);
     const connectionError = useAtomValue(connectionErrorAtom);
 
     useEffect(() => {
         setBoard(createInitialBoard(safeBoardSize));
         setIsP1Turn(true);
         setBoardWinner('.');
+        setIsGameReady(false);
+        setMyColor('.');
+        setRoomId(null);
         setOpponentDisplayName(null);
+        setOpponentId(null);
         setGameState('playing');
         setWinner(null);
 
@@ -38,7 +46,7 @@ function App() {
             userId: user?.userId ?? null,
           displayName: user?.displayName ?? null,
         }));
-    }, [safeBoardSize, setBoard, setIsP1Turn, setBoardWinner]);
+    }, [safeBoardSize, setBoard, setIsP1Turn, setBoardWinner, setIsGameReady, setMyColor, setRoomId, setOpponentDisplayName, setOpponentId, user]);
 
     const resetGame = () => {
         setBoard(createInitialBoard(safeBoardSize));
@@ -59,6 +67,11 @@ function App() {
     setBoard(createInitialBoard(safeBoardSize));
     setIsP1Turn(true);
     setBoardWinner('.');
+    setIsGameReady(false);
+    setMyColor('.');
+    setRoomId(null);
+    setOpponentDisplayName(null);
+    setOpponentId(null);
     setWinner(null);
     setGameState('playing');
     navigate('/board-size');

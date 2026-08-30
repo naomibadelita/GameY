@@ -7,5 +7,6 @@ export const winnerAtom = atom<CellValue>('.');
 export const myColorAtom = atom<CellValue>('.');
 export const roomIdAtom = atom<string | null>(null);
 export const opponentDisplayNameAtom = atom<string | null>(null);
+export const opponentIdAtom = atom<string | null>(null);
 export const connectionErrorAtom = atom<string | null>(null);
 export const isGameReadyAtom = atom<boolean>(false);
