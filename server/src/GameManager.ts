@@ -64,12 +64,22 @@ export class GameManager implements ISubscriber {
         return this.connectedPlayers.find((player) => player.ws === ws);
     }
 
-    private userAlreadyConnected(userId: string | null, currentWs: WebSocket): boolean {
+    private disconnectExistingSession(userId: string | null, currentWs: WebSocket) {
         if (!userId) {
-            return false;
+            return;
         }
 
-        return this.connectedPlayers.some((player) => player.userId === userId && player.ws !== currentWs);
+        const existingPlayers = this.connectedPlayers.filter((player) =>
+            player.userId === userId && player.ws !== currentWs
+        );
+
+        existingPlayers.forEach((existingPlayer) => {
+            this.leaveRoom(existingPlayer.ws);
+            this.waitingPlayers = this.waitingPlayers.filter((player) => player.ws !== existingPlayer.ws);
+            this.players = this.players.filter((player) => player.ws !== existingPlayer.ws);
+            this.connectedPlayers = this.connectedPlayers.filter((player) => player.ws !== existingPlayer.ws);
+            existingPlayer.ws.close();
+        });
     }
 
     private getRoomForPlayer(ws: WebSocket): RoomState | undefined {
@@ -310,18 +320,9 @@ export class GameManager implements ISubscriber {
             return;
         }
 
+        this.disconnectExistingSession(userId, ws);
         player.userId = userId ?? player.userId;
         player.displayName = displayName ?? player.displayName ?? null;
-        if (userId && this.userAlreadyConnected(userId, ws)) {
-            ws.send(JSON.stringify({
-                type: 'status',
-                isGameReady: false,
-                boardSize: requestedSize,
-                roomId: null,
-                error: 'This user is already connected.'
-            }));
-            return;
-        }
 
         player.boardSize = requestedSize;
         const opponent = this.waitingPlayers.find((waitingPlayer) =>
