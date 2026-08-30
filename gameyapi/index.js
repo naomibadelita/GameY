@@ -248,6 +248,26 @@ function updateElo(userId, opponentId, hasWon, callback) {
   );
 }
 
+function saveFinishedGame(board, currentPlayer, players) {
+  const now = Date.now();
+  players.filter((player) => player.userId).forEach((player) => {
+    const opponent = players.find((item) => item.color !== player.color);
+    const hasWon = player.color !== currentPlayer;
+    db.run(
+      'INSERT INTO games (id, userId, opponentId, isPlayer1, board, currentPlayer, status, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [randomUUID(), player.userId, opponent?.userId ?? null, player.color === 'B', JSON.stringify(board), currentPlayer, 'finished', now]
+    );
+    db.run(
+      'UPDATE users SET matchesPlayed = matchesPlayed + 1, matchesWon = matchesWon + ?, lastActive = ? WHERE id = ?',
+      [hasWon ? 1 : 0, now, player.userId]
+    );
+  });
+
+  if (players[0]?.userId && players[1]?.userId) {
+    updateElo(players[0].userId, players[1].userId, players[0].color !== currentPlayer, () => {});
+  }
+}
+
 router.post('/game/:id', verifyToken, (req, res) => {
   const { id } = req.params;
   const { board, opponentId, isPlayer1, currentPlayer, status } = req.body;
@@ -267,7 +287,7 @@ router.post('/game/:id', verifyToken, (req, res) => {
       if (this.changes === 0) {
         return res.status(404).json({ error: 'Game not found' });
       }
-      // TODO: Move the winning behavior in the server.
+
       if (status === 'finished') {
         const hasWon = (isPlayer1 && currentPlayer === 'R') ||
           (!isPlayer1 && currentPlayer === 'B');
@@ -495,4 +515,4 @@ router.get('/history/:uid/:page/:limit', verifyToken, async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = Object.assign(router, { saveFinishedGame });

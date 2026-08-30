@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
-import { validateUuid, createGame, saveGame } from './api';
+import { useEffect } from 'react';
 import './GameBoard.css';
-import { boardAtom, isGameReadyAtom, isP1TurnAtom, myColorAtom, roomIdAtom, winnerAtom, opponentDisplayNameAtom, opponentIdAtom } from './Atoms';
+import { boardAtom, isGameReadyAtom, isP1TurnAtom, myColorAtom, roomIdAtom, winnerAtom, opponentDisplayNameAtom } from './Atoms';
 import { useAtomValue } from 'jotai'
 import { normalizeBoardForSize } from '../../shared/CellValue';
 import { sendMessage } from './Connection';
@@ -20,42 +19,8 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
     const color = useAtomValue(myColorAtom);
     const roomId = useAtomValue(roomIdAtom);
     const opponentDisplayName = useAtomValue(opponentDisplayNameAtom);
-    const opponentId = useAtomValue(opponentIdAtom);
     const { user } = useAuth();
-    const [gameId, setGameId] = useState<string | null>(null);
-    const gameCreatedRef = useRef(false);
     const safeBoard = normalizeBoardForSize(board, boardSize);
-
-    // Create a new game when component mounts
-    useEffect(() => {
-        if (!user || !isGameReady || (color !== 'B' && color !== 'R') || gameCreatedRef.current) {
-            return;
-        }
-
-        gameCreatedRef.current = true;
-
-        const startNewGame = async () => {
-            try {
-                const response = await createGame(safeBoard, color === 'B', 'B', 'in-progress');
-                setGameId(validateUuid(response.id));
-            } catch (error) {
-                gameCreatedRef.current = false;
-                console.error('Failed to create game:', error);
-            }
-        };
-        startNewGame();
-    }, [user, isGameReady, color, safeBoard]);
-
-    // Maybe this shouldn't be the responsibility of the client
-    
-    // Save game state whenever it changes
-    useEffect(() => {
-        if (user && gameId) {
-            saveGame(gameId, safeBoard, opponentId, color === 'B', isP1Turn ? 'B' : 'R', winner !== '.' ? 'finished' : 'in-progress').catch(error => {
-                console.error('Failed to save game:', error);
-            });
-        }
-    }, [user, gameId, safeBoard, opponentId, color, isP1Turn, winner]);
 
     useEffect(() => {
         if (winner === 'B' || winner === 'R') {
