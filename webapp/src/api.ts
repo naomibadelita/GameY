@@ -1,5 +1,5 @@
 import type { BoardState } from "../../shared/CellValue";
-import type { LeaderboardCategory, LeaderboardMetric } from "./leaderboard/domain/leaderboard.types";
+import { isLeaderboardCategory, isLeaderboardMetric, type LeaderboardCategory, type LeaderboardMetric } from "./leaderboard/domain/leaderboard.types";
 import type { Profile } from "./statistics/domain/profile.entity";
 import type { MatchData, StatisticsData } from "./statistics/domain/statistics.entity";
 
@@ -65,6 +65,10 @@ export async function saveGame(id: string, board: BoardState, opponentId: string
 }
 
 export async function loadLeaderboard(category: LeaderboardCategory, metric: LeaderboardMetric) {
+  if (!isLeaderboardCategory(category) || !isLeaderboardMetric(metric)) {
+    throw new Error('Invalid leaderboard parameters');
+  }
+
   const response = await fetch(`${API_BASE}/leaderboard/${encodeURIComponent(category)}/${encodeURIComponent(metric)}`, {
     method: 'GET',
     headers: getAuthHeaders(),

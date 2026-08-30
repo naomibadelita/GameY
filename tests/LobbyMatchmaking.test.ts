@@ -97,12 +97,14 @@ describe('GameManager lobby matchmaking', () => {
       readyState: 1,
       OPEN: 1,
       send: vi.fn(),
+      close: vi.fn(),
     };
 
     const ws2: any = {
       readyState: 1,
       OPEN: 1,
       send: vi.fn(),
+      close: vi.fn(),
     };
 
     gm.onConnection(ws1);

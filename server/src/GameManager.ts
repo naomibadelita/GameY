@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto';
 import { Board, MoveResult } from '../../gamey/Board';
 import { ISubscriber } from './Interfaces';
 import { type CellValue } from "../../shared/CellValue";
-import gameyApiRouter from '../../gameyapi/index.js';
 
 class PlayerData {
     ws: WebSocket;
@@ -129,7 +128,9 @@ export class GameManager implements ISubscriber {
         });
     }
 
-    private onWin(room: RoomState) {
+    private async onWin(room: RoomState) {
+        const { default: gameyApiRouter } = await import('../../gameyapi/index.js');
+
         return gameyApiRouter.saveFinishedGame(
             room.board.rows.map((row) => row.map((node) => node.color)),
             room.currentPlayer,
