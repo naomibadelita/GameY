@@ -1,6 +1,6 @@
 import { getDefaultStore } from "jotai";
 import { type CellValue } from "../../shared/CellValue";
-import { boardAtom, isGameReadyAtom, isP1TurnAtom, winnerAtom, myColorAtom, roomIdAtom, connectionErrorAtom, opponentDisplayNameAtom, opponentIdAtom } from "./Atoms";
+import { boardAtom, boardSizeAtom, isGameReadyAtom, isP1TurnAtom, winnerAtom, myColorAtom, roomIdAtom, connectionErrorAtom, opponentDisplayNameAtom, opponentIdAtom } from "./Atoms";
 
 const getWebSocketUrl = (): string => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -32,6 +32,16 @@ const url = getWebSocketUrl();
 console.log(`URL: ${url}`)
 export const ws = new WebSocket(url);
 
+export function sendMessage(message: Record<string, unknown>) {
+    const payload = JSON.stringify(message);
+    if (ws.readyState === WebSocket.OPEN) {
+        ws.send(payload);
+        return;
+    }
+
+    ws.addEventListener('open', () => ws.send(payload), { once: true });
+}
+
 type ServerMessage = {
     type?: 'update' | 'init' | 'status';
     board?: string;
@@ -43,7 +53,14 @@ type ServerMessage = {
     isGameReady?: boolean;
     error?: string;
     roomId?: string | null;
+    boardSize?: number;
 };
+
+function setBoardSize(boardSize: number | undefined) {
+    if (typeof boardSize === 'number' && Number.isFinite(boardSize) && boardSize > 1) {
+        store.set(boardSizeAtom, boardSize);
+    }
+}
 
 function setRoomId(roomId: string | null | undefined) {
     store.set(roomIdAtom, roomId ?? null);
@@ -62,6 +79,7 @@ function handleUpdate(data: ServerMessage) {
 }
 
 function handleInit(data: ServerMessage) {
+    setBoardSize(data.boardSize);
     if (data.myColor) {
         store.set(myColorAtom, data.myColor);
     }
@@ -76,6 +94,7 @@ function handleInit(data: ServerMessage) {
 }
 
 function handleStatus(data: ServerMessage) {
+    setBoardSize(data.boardSize);
     store.set(isGameReadyAtom, Boolean(data.isGameReady));
     if (!data.isGameReady) {
         store.set(opponentDisplayNameAtom, null);

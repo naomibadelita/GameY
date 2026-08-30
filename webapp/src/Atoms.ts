@@ -10,3 +10,4 @@ export const opponentDisplayNameAtom = atom<string | null>(null);
 export const opponentIdAtom = atom<string | null>(null);
 export const connectionErrorAtom = atom<string | null>(null);
 export const isGameReadyAtom = atom<boolean>(false);
+export const boardSizeAtom = atom<number>(8);

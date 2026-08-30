@@ -29,6 +29,14 @@ export default function MainMenu() {
           <button
             type="button"
             className="menu-btn primary-btn"
+            onClick={() => navigate('/board-size', { state: { privateGame: true } })}
+          >
+            Create Private Game
+          </button>
+
+          <button
+            type="button"
+            className="menu-btn primary-btn"
             onClick={() => navigate('/leaderboard')}
           >
             View Leaderboard

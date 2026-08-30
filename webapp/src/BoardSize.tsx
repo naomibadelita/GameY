@@ -1,13 +1,15 @@
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import './BoardSize.css';
 
 const BOARD_SIZES = [6, 8, 10];
 
 export default function BoardSize() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const privateGame = Boolean((location.state as { privateGame?: boolean } | null)?.privateGame);
 
   const handleSelectBoardSize = (size: number) => {
-    navigate('/game', { state: { boardSize: size } });
+    navigate(privateGame ? '/game/new' : '/game', { state: { boardSize: size, privateGame } });
   };
 
   return (

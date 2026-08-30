@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useAuth } from './Auth';
 import './App.css'
 import GameBoard from './GameBoard';
 import GameOver from './GameOver';
-import { boardAtom, connectionErrorAtom, isGameReadyAtom, isP1TurnAtom, myColorAtom, opponentDisplayNameAtom, opponentIdAtom, roomIdAtom, winnerAtom } from './Atoms';
+import { boardAtom, boardSizeAtom, connectionErrorAtom, isGameReadyAtom, isP1TurnAtom, myColorAtom, opponentDisplayNameAtom, opponentIdAtom, roomIdAtom, winnerAtom } from './Atoms';
 import { createInitialBoard } from '../../shared/CellValue';
-import { ws } from './Connection';
+import { sendMessage } from './Connection';
 import { loadStatistics } from './api';
 
 function App() {
     const location = useLocation();
+    const { gameId } = useParams();
     const rawBoardSize = (location.state as { boardSize?: number | string } | null)?.boardSize ?? 8;
     const selectedBoardSize = Number(rawBoardSize);
     const safeBoardSize = Number.isFinite(selectedBoardSize) && selectedBoardSize > 1 ? selectedBoardSize : 8;
@@ -29,6 +30,9 @@ function App() {
     const setOpponentDisplayName = useSetAtom(opponentDisplayNameAtom);
     const setOpponentId = useSetAtom(opponentIdAtom);
     const connectionError = useAtomValue(connectionErrorAtom);
+    const serverBoardSize = useAtomValue(boardSizeAtom);
+    const roomId = useAtomValue(roomIdAtom);
+    const activeBoardSize = gameId && gameId !== 'new' ? serverBoardSize : safeBoardSize;
 
     useEffect(() => {
         if (!user?.userId) {
@@ -41,7 +45,7 @@ function App() {
     }, [user?.userId]);
 
     useEffect(() => {
-        setBoard(createInitialBoard(safeBoardSize));
+        setBoard(createInitialBoard(activeBoardSize));
         setIsP1Turn(true);
         setBoardWinner('.');
         setIsGameReady(false);
@@ -52,16 +56,31 @@ function App() {
         setGameState('playing');
         setWinner(null);
 
-        ws.send(JSON.stringify({
-            type: 'join_lobby',
-            boardSize: safeBoardSize,
+        const isPrivateGame = Boolean(gameId);
+        let messageType = 'join_lobby';
+        if (gameId === 'new') {
+            messageType = 'create_private_room';
+        } else if (isPrivateGame) {
+            messageType = 'join_private_room';
+        }
+
+        sendMessage({
+            type: messageType,
+            roomId: isPrivateGame && gameId !== 'new' ? gameId : undefined,
+            boardSize: activeBoardSize,
             userId: user?.userId ?? null,
-          displayName: user?.displayName ?? null,
-        }));
-    }, [safeBoardSize, setBoard, setIsP1Turn, setBoardWinner, setIsGameReady, setMyColor, setRoomId, setOpponentDisplayName, setOpponentId, user]);
+            displayName: user?.displayName ?? 'Guest',
+        });
+    }, [gameId, activeBoardSize, setBoard, setIsP1Turn, setBoardWinner, setIsGameReady, setMyColor, setRoomId, setOpponentDisplayName, setOpponentId, user]);
+
+    useEffect(() => {
+        if (gameId === 'new' && roomId) {
+            navigate(`/game/${roomId}`, { replace: true });
+        }
+    }, [gameId, roomId, navigate]);
 
     const resetGame = () => {
-        setBoard(createInitialBoard(safeBoardSize));
+        setBoard(createInitialBoard(activeBoardSize));
         setIsP1Turn(true);
         setBoardWinner('.');
     };
@@ -72,21 +91,13 @@ function App() {
   };
 
   const handlePlayAgain = () => {
-    ws.send(JSON.stringify({
-      type: 'leave_room',
-      userId: user?.userId ?? null,
-    }));
-    setBoard(createInitialBoard(safeBoardSize));
+    sendMessage({ type: 'request_rematch' });
+    setBoard(createInitialBoard(activeBoardSize));
     setIsP1Turn(true);
     setBoardWinner('.');
     setIsGameReady(false);
-    setMyColor('.');
-    setRoomId(null);
-    setOpponentDisplayName(null);
-    setOpponentId(null);
     setWinner(null);
     setGameState('playing');
-    navigate('/board-size');
   };
 
     const handleLogout = () => {
@@ -100,8 +111,8 @@ function App() {
       <div className="app-header">
         <h1>Game Y</h1>
         <div className="header-right">
-          <span className="user-name">Welcome, {user?.displayName}!</span>
-          <button type="button" className="logout-btn" onClick={handleLogout}>Logout</button>
+          <span className="user-name">Welcome, {user?.displayName ?? 'Guest'}!</span>
+          {user ? <button type="button" className="logout-btn" onClick={handleLogout}>Logout</button> : null}
         </div>
       </div>
       {connectionError ? (
@@ -111,7 +122,7 @@ function App() {
       ) : null}
 
       {gameState === 'playing' ? (
-        <GameBoard boardSize={safeBoardSize} onGameOver={handleGameOver} />
+        <GameBoard boardSize={activeBoardSize} onGameOver={handleGameOver} />
       ) : (
         <GameOver winner={winner!} eloBefore={eloBefore} onPlayAgain={handlePlayAgain} />
       )}

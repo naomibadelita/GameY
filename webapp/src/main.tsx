@@ -41,6 +41,7 @@ createRoot(document.getElementById('root')!).render(
               </ProtectedRoute>
             }
           />
+          <Route path="/game/:gameId" element={<App />} />
           <Route
             path="/leaderboard"
             element={

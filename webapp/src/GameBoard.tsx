@@ -4,7 +4,7 @@ import './GameBoard.css';
 import { boardAtom, isGameReadyAtom, isP1TurnAtom, myColorAtom, roomIdAtom, winnerAtom, opponentDisplayNameAtom, opponentIdAtom } from './Atoms';
 import { useAtomValue } from 'jotai'
 import { normalizeBoardForSize } from '../../shared/CellValue';
-import { ws } from './Connection';
+import { sendMessage } from './Connection';
 import { useAuth } from './Auth';
 
 interface GameBoardProps {
@@ -28,7 +28,7 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
 
     // Create a new game when component mounts
     useEffect(() => {
-        if (!isGameReady || (color !== 'B' && color !== 'R') || gameCreatedRef.current) {
+        if (!user || !isGameReady || (color !== 'B' && color !== 'R') || gameCreatedRef.current) {
             return;
         }
 
@@ -44,18 +44,18 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
             }
         };
         startNewGame();
-    }, [isGameReady, color, safeBoard]);
+    }, [user, isGameReady, color, safeBoard]);
 
     // Maybe this shouldn't be the responsibility of the client
     
     // Save game state whenever it changes
     useEffect(() => {
-        if (gameId) {
+        if (user && gameId) {
             saveGame(gameId, safeBoard, opponentId, color === 'B', isP1Turn ? 'B' : 'R', winner !== '.' ? 'finished' : 'in-progress').catch(error => {
                 console.error('Failed to save game:', error);
             });
         }
-    }, [gameId, safeBoard, opponentId, color, isP1Turn, winner]);
+    }, [user, gameId, safeBoard, opponentId, color, isP1Turn, winner]);
 
     useEffect(() => {
         if (winner === 'B' || winner === 'R') {
@@ -67,15 +67,14 @@ export default function GameBoard({ boardSize, onGameOver }: GameBoardProps) {
         if (winner !== '.' || safeBoard[y][x] !== '.') {
             return;
         }
-        const msg = JSON.stringify({
+        const msg = {
             type: 'move',
             x: x,
             y: y,
             color: color,
             roomId: roomId,
-        });
-        console.log(`MSG: ${msg}`);
-        ws.send(msg);
+        };
+        sendMessage(msg);
     };
 
     const renderBoard = () => {

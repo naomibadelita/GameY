@@ -9,6 +9,7 @@ type ServerMessage = {
   myColor?: string;
   displayName?: string;
   opponentDisplayName?: string;
+  error?: string;
 };
 
 const parseSentMessages = (sendMock: ReturnType<typeof vi.fn>): ServerMessage[] =>
@@ -175,5 +176,110 @@ describe('GameManager lobby matchmaking', () => {
 
     expect(player1RematchInit?.myColor).toBe('R');
     expect(player2RematchInit?.myColor).toBe('B');
+  });
+
+  test('creates a private room before an opponent joins', () => {
+    const gm = new GameManager(8);
+    const ws: any = { readyState: 1, OPEN: 1, send: vi.fn() };
+
+    gm.onConnection(ws);
+    gm.onMessage(ws, {
+      type: 'create_private_room',
+      boardSize: 6,
+      displayName: 'Guest-1',
+    });
+
+    const messages = parseSentMessages(ws.send);
+    const roomId = messages.find((message) => message.type === 'status' && message.roomId)?.roomId;
+
+    expect(roomId).toMatch(/^room-/);
+    expect(messages.some((message) => message.type === 'status' && message.isGameReady === false)).toBe(true);
+  });
+
+  test('lets an anonymous player join a private room by its id', () => {
+    const gm = new GameManager(8);
+    const creator: any = { readyState: 1, OPEN: 1, send: vi.fn() };
+    const guest: any = { readyState: 1, OPEN: 1, send: vi.fn() };
+
+    gm.onConnection(creator);
+    gm.onConnection(guest);
+    gm.onMessage(creator, {
+      type: 'create_private_room',
+      boardSize: 10,
+      displayName: 'Guest-1',
+    });
+
+    const roomId = parseSentMessages(creator.send)
+      .find((message) => message.type === 'status' && message.roomId)?.roomId;
+
+    gm.onMessage(guest, {
+      type: 'join_private_room',
+      roomId,
+      displayName: 'Guest-2',
+    });
+
+    const creatorMessages = parseSentMessages(creator.send);
+    const guestMessages = parseSentMessages(guest.send);
+
+    expect(creatorMessages.some((message) => message.type === 'status' && message.isGameReady === true)).toBe(true);
+    expect(guestMessages.some((message) => message.type === 'status' && message.isGameReady === true)).toBe(true);
+    expect(creatorMessages.at(-3)?.opponentDisplayName).toBe('Guest-2');
+    expect(guestMessages.at(-3)?.opponentDisplayName).toBe('Guest-1');
+  });
+
+  test('rejects a third player when a private room is full', () => {
+    const gm = new GameManager(8);
+    const creator: any = { readyState: 1, OPEN: 1, send: vi.fn() };
+    const guest: any = { readyState: 1, OPEN: 1, send: vi.fn() };
+    const thirdPlayer: any = { readyState: 1, OPEN: 1, send: vi.fn() };
+
+    gm.onConnection(creator);
+    gm.onConnection(guest);
+    gm.onConnection(thirdPlayer);
+    gm.onMessage(creator, { type: 'create_private_room', boardSize: 8 });
+    const roomId = parseSentMessages(creator.send)
+      .find((message) => message.type === 'status' && message.roomId)?.roomId;
+
+    gm.onMessage(guest, { type: 'join_private_room', roomId });
+    gm.onMessage(thirdPlayer, { type: 'join_private_room', roomId });
+
+    const messages = parseSentMessages(thirdPlayer.send);
+    expect(messages.some((message) => message.error === 'This game is full.')).toBe(true);
+  });
+
+  test('starts a new game after both players request a rematch', () => {
+    const gm = new GameManager(8);
+    const creator: any = { readyState: 1, OPEN: 1, send: vi.fn() };
+    const guest: any = { readyState: 1, OPEN: 1, send: vi.fn() };
+
+    gm.onConnection(creator);
+    gm.onConnection(guest);
+    gm.onMessage(creator, { type: 'create_private_room', boardSize: 8, displayName: 'Player' });
+    const roomId = parseSentMessages(creator.send)
+      .find((message) => message.type === 'status' && message.roomId)?.roomId;
+    gm.onMessage(guest, { type: 'join_private_room', roomId, displayName: 'Guest' });
+
+    const creatorInitialColor = parseSentMessages(creator.send)
+      .filter((message) => message.type === 'init' && message.roomId)
+      .at(-1)?.myColor;
+    const guestInitialColor = parseSentMessages(guest.send)
+      .filter((message) => message.type === 'init' && message.roomId)
+      .at(-1)?.myColor;
+
+    creator.send.mockClear();
+    guest.send.mockClear();
+    gm.onMessage(creator, { type: 'request_rematch' });
+
+    expect(creator.send).not.toHaveBeenCalled();
+    expect(guest.send).not.toHaveBeenCalled();
+
+    gm.onMessage(guest, { type: 'request_rematch' });
+
+    const creatorMessages = parseSentMessages(creator.send);
+    const guestMessages = parseSentMessages(guest.send);
+    expect(creatorMessages.some((message) => message.type === 'status' && message.isGameReady === true)).toBe(true);
+    expect(guestMessages.some((message) => message.type === 'status' && message.isGameReady === true)).toBe(true);
+    expect(creatorMessages.find((message) => message.type === 'init')?.myColor).not.toBe(creatorInitialColor);
+    expect(guestMessages.find((message) => message.type === 'init')?.myColor).not.toBe(guestInitialColor);
   });
 });
