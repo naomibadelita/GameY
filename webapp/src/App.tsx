@@ -5,7 +5,7 @@ import { useAuth } from './Auth';
 import './App.css'
 import GameBoard from './GameBoard';
 import GameOver from './GameOver';
-import { boardAtom, boardSizeAtom, connectionErrorAtom, isGameReadyAtom, isP1TurnAtom, myColorAtom, opponentDisplayNameAtom, opponentIdAtom, roomIdAtom, winnerAtom } from './Atoms';
+import { boardAtom, boardSizeAtom, connectionErrorAtom, isGameReadyAtom, isOpponentAvailableAtom, isP1TurnAtom, myColorAtom, opponentDisplayNameAtom, opponentIdAtom, rematchRequesterAtom, roomIdAtom, winnerAtom } from './Atoms';
 import { createInitialBoard } from '../../shared/CellValue';
 import { sendMessage } from './Connection';
 import { loadStatistics } from './api';
@@ -20,7 +20,7 @@ function App() {
     const [winner, setWinner] = useState<'B' | 'R' | null>(null);
     const [eloBefore, setEloBefore] = useState<number | null>(null);
     const [eloAfter, setEloAfter] = useState<number | null>(null);
-    const { user, isLoading, logout } = useAuth();
+    const { user, isLoading } = useAuth();
     const navigate = useNavigate();
     const setBoard = useSetAtom(boardAtom);
     const setIsP1Turn = useSetAtom(isP1TurnAtom);
@@ -30,10 +30,14 @@ function App() {
     const setRoomId = useSetAtom(roomIdAtom);
     const setOpponentDisplayName = useSetAtom(opponentDisplayNameAtom);
     const setOpponentId = useSetAtom(opponentIdAtom);
+    const setRematchRequester = useSetAtom(rematchRequesterAtom);
+    const setIsOpponentAvailable = useSetAtom(isOpponentAvailableAtom);
     const connectionError = useAtomValue(connectionErrorAtom);
     const serverBoardSize = useAtomValue(boardSizeAtom);
     const roomId = useAtomValue(roomIdAtom);
     const opponentId = useAtomValue(opponentIdAtom);
+    const isGameReady = useAtomValue(isGameReadyAtom);
+    const boardWinner = useAtomValue(winnerAtom);
     const activeBoardSize = gameId && gameId !== 'new' ? serverBoardSize : safeBoardSize;
 
     useEffect(() => {
@@ -57,6 +61,8 @@ function App() {
         setRoomId(null);
         setOpponentDisplayName(null);
         setOpponentId(null);
+        setRematchRequester(null);
+        setIsOpponentAvailable(false);
         setGameState('playing');
         setWinner(null);
         setEloAfter(null);
@@ -76,7 +82,7 @@ function App() {
             userId: user?.userId ?? null,
             displayName: user?.displayName ?? 'Guest',
         });
-    }, [gameId, activeBoardSize, setBoard, setIsP1Turn, setBoardWinner, setIsGameReady, setMyColor, setRoomId, setOpponentDisplayName, setOpponentId, user, isLoading]);
+    }, [gameId, activeBoardSize, setBoard, setIsP1Turn, setBoardWinner, setIsGameReady, setMyColor, setRoomId, setOpponentDisplayName, setOpponentId, setRematchRequester, setIsOpponentAvailable, user, isLoading]);
 
     useEffect(() => {
         if (gameId === 'new' && roomId) {
@@ -101,22 +107,38 @@ function App() {
   };
 
   const handlePlayAgain = () => {
-    sendMessage({ type: 'request_rematch' });
-    setBoard(createInitialBoard(activeBoardSize));
-    setIsP1Turn(true);
-    setBoardWinner('.');
+    sendMessage({ type: 'leave_room' });
+    sendMessage({
+      type: 'join_lobby',
+      boardSize: activeBoardSize,
+      userId: user?.userId ?? null,
+      displayName: user?.displayName ?? 'Guest',
+    });
+    resetGame();
     setIsGameReady(false);
     setWinner(null);
-    setEloBefore(eloAfter ?? eloBefore);
     setEloAfter(null);
     setGameState('playing');
   };
 
-    const handleLogout = () => {
-        resetGame();
-        logout();
-        navigate('/login');
-    };
+  const handleRematch = () => {
+    sendMessage({ type: 'request_rematch' });
+  };
+
+  useEffect(() => {
+    if (gameState === 'over' && isGameReady && boardWinner === '.') {
+      setEloBefore(eloAfter ?? eloBefore);
+      setEloAfter(null);
+      setWinner(null);
+      setGameState('playing');
+    }
+  }, [boardWinner, eloAfter, eloBefore, gameState, isGameReady]);
+
+  const handleMainMenu = () => {
+    sendMessage({ type: 'leave_room' });
+    resetGame();
+    navigate('/menu');
+  };
 
   return (
     <div className="app-container">
@@ -124,7 +146,7 @@ function App() {
         <h1>Game Y</h1>
         <div className="header-right">
           <span className="user-name">Welcome, {user?.displayName ?? 'Guest'}!</span>
-          {user ? <button type="button" className="logout-btn" onClick={handleLogout}>Logout</button> : null}
+          {user ? <button type="button" className="logout-btn" onClick={handleMainMenu}>Resign</button> : null}
         </div>
       </div>
       {connectionError ? (
@@ -136,7 +158,14 @@ function App() {
       {gameState === 'playing' ? (
         <GameBoard boardSize={activeBoardSize} onGameOver={handleGameOver} />
       ) : (
-        <GameOver winner={winner!} eloBefore={eloBefore} eloAfter={eloAfter} onPlayAgain={handlePlayAgain} />
+        <GameOver
+          winner={winner!}
+          eloBefore={eloBefore}
+          eloAfter={eloAfter}
+          onPlayAgain={handlePlayAgain}
+          onRematch={handleRematch}
+          onMainMenu={handleMainMenu}
+        />
       )}
     </div>
   );

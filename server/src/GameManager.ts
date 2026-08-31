@@ -297,8 +297,21 @@ export class GameManager implements ISubscriber {
             return;
         }
 
+        if (room.rematchPlayers.has(ws)) {
+            return;
+        }
+
         room.rematchPlayers.add(ws);
         if (room.rematchPlayers.size < 2) {
+            const requester = room.players.find((player) => player.ws === ws);
+            const opponent = room.players.find((player) => player.ws !== ws);
+            if (opponent?.ws.readyState === opponent.ws.OPEN) {
+                opponent.ws.send(JSON.stringify({
+                    type: 'rematch_requested',
+                    requesterDisplayName: requester?.displayName ?? 'Opponent',
+                    roomId: room.id,
+                }));
+            }
             return;
         }
 

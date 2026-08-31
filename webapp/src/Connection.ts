@@ -1,6 +1,6 @@
 import { getDefaultStore } from "jotai";
 import { type CellValue } from "../../shared/CellValue";
-import { boardAtom, boardSizeAtom, isGameReadyAtom, isP1TurnAtom, winnerAtom, myColorAtom, roomIdAtom, connectionErrorAtom, opponentDisplayNameAtom, opponentIdAtom } from "./Atoms";
+import { boardAtom, boardSizeAtom, isGameReadyAtom, isP1TurnAtom, winnerAtom, myColorAtom, roomIdAtom, connectionErrorAtom, opponentDisplayNameAtom, opponentIdAtom, rematchRequesterAtom, isOpponentAvailableAtom } from "./Atoms";
 
 const getWebSocketUrl = (): string => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -43,7 +43,7 @@ export function sendMessage(message: Record<string, unknown>) {
 }
 
 type ServerMessage = {
-    type?: 'update' | 'init' | 'status';
+    type?: 'update' | 'init' | 'status' | 'rematch_requested';
     board?: string;
     isP1Turn?: boolean;
     winner?: CellValue;
@@ -52,6 +52,8 @@ type ServerMessage = {
     opponentId?: string;
     isGameReady?: boolean;
     error?: string;
+    opponentLeft?: boolean;
+    requesterDisplayName?: string;
     roomId?: string | null;
     boardSize?: number;
 };
@@ -75,6 +77,9 @@ function handleUpdate(data: ServerMessage) {
     store.set(boardAtom, deserializeBoard(data.board));
     store.set(isP1TurnAtom, Boolean(data.isP1Turn));
     store.set(winnerAtom, data.winner ?? '.');
+    if (data.winner === '.') {
+        store.set(rematchRequesterAtom, null);
+    }
     setRoomId(data.roomId);
 }
 
@@ -96,18 +101,27 @@ function handleInit(data: ServerMessage) {
 function handleStatus(data: ServerMessage) {
     setBoardSize(data.boardSize);
     store.set(isGameReadyAtom, Boolean(data.isGameReady));
+    store.set(isOpponentAvailableAtom, Boolean(data.isGameReady) && !data.opponentLeft);
     if (!data.isGameReady) {
         store.set(opponentDisplayNameAtom, null);
         store.set(opponentIdAtom, null);
+    }
+    if (data.opponentLeft) {
+        store.set(rematchRequesterAtom, null);
     }
     store.set(connectionErrorAtom, data.error ?? null);
     setRoomId(data.roomId);
 }
 
-const messageHandlers: Record<'update' | 'init' | 'status', (data: ServerMessage) => void> = {
+function handleRematchRequested(data: ServerMessage) {
+    store.set(rematchRequesterAtom, data.requesterDisplayName ?? 'Opponent');
+}
+
+const messageHandlers: Record<'update' | 'init' | 'status' | 'rematch_requested', (data: ServerMessage) => void> = {
     update: handleUpdate,
     init: handleInit,
     status: handleStatus,
+    rematch_requested: handleRematchRequested,
 };
 
 ws.onmessage = (ev) => {

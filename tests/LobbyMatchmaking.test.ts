@@ -8,6 +8,7 @@ type ServerMessage = {
   roomId?: string | null;
   myColor?: string;
   displayName?: string;
+  requesterDisplayName?: string;
   opponentDisplayName?: string;
   error?: string;
 };
@@ -273,7 +274,13 @@ describe('GameManager lobby matchmaking', () => {
     gm.onMessage(creator, { type: 'request_rematch' });
 
     expect(creator.send).not.toHaveBeenCalled();
-    expect(guest.send).not.toHaveBeenCalled();
+    expect(parseSentMessages(guest.send)).toEqual([
+      expect.objectContaining({
+        type: 'rematch_requested',
+        requesterDisplayName: 'Player',
+        roomId,
+      }),
+    ]);
 
     gm.onMessage(guest, { type: 'request_rematch' });
 
