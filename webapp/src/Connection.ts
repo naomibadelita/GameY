@@ -1,6 +1,6 @@
 import { getDefaultStore } from "jotai";
 import { type CellValue } from "../../shared/CellValue";
-import { boardAtom, boardSizeAtom, isGameReadyAtom, isP1TurnAtom, winnerAtom, myColorAtom, roomIdAtom, connectionErrorAtom, opponentDisplayNameAtom, opponentIdAtom, rematchRequesterAtom, isOpponentAvailableAtom } from "./Atoms";
+import { boardAtom, boardSizeAtom, isGameReadyAtom, isP1TurnAtom, winnerAtom, myColorAtom, roomIdAtom, connectionErrorAtom, opponentDisplayNameAtom, opponentIdAtom, rematchRequesterAtom, isOpponentAvailableAtom, opponentDisconnectedAtom } from "./Atoms";
 
 const getWebSocketUrl = (): string => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -53,6 +53,7 @@ type ServerMessage = {
     isGameReady?: boolean;
     error?: string;
     opponentLeft?: boolean;
+    opponentDisconnected?: boolean;
     requesterDisplayName?: string;
     roomId?: string | null;
     boardSize?: number;
@@ -109,6 +110,7 @@ function handleStatus(data: ServerMessage) {
     if (data.opponentLeft) {
         store.set(rematchRequesterAtom, null);
     }
+    store.set(opponentDisconnectedAtom, Boolean(data.opponentDisconnected || data.opponentLeft));
     store.set(connectionErrorAtom, data.error ?? null);
     setRoomId(data.roomId);
 }

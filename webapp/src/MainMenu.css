@@ -11,6 +11,41 @@
   padding: 20px;
 }
 
+.menu-error-notification {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  z-index: 10;
+  width: min(90%, 520px);
+  padding: 16px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 12px;
+  background: #c62828;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  animation: menu-error-lifecycle 5s ease-in-out both;
+}
+
+@keyframes menu-error-lifecycle {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -120%);
+  }
+
+  7%, 90% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -120%);
+  }
+}
+
 .menu-content {
   text-align: center;
   width: 100%;

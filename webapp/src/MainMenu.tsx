@@ -1,10 +1,24 @@
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './Auth';
 import './MainMenu.css';
 
 export default function MainMenu() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
+  const [error, setError] = useState<string | null>(() => {
+    const state = location.state as { error?: unknown } | null;
+    return typeof state?.error === 'string' ? state.error : null;
+  });
+
+  useEffect(() => {
+    if (!error) return;
+
+    navigate(location.pathname, { replace: true, state: null });
+    const timeoutId = window.setTimeout(() => setError(null), 5200);
+    return () => window.clearTimeout(timeoutId);
+  }, [error, location.pathname, navigate]);
 
   const handleLogout = () => {
     logout();
@@ -13,6 +27,11 @@ export default function MainMenu() {
 
   return (
     <div className="menu-container">
+      {error ? (
+        <div className="menu-error-notification" role="alert">
+          {error}
+        </div>
+      ) : null}
       <div className="menu-content">
         <h1 className="menu-title">Game Y</h1>
         <p className="menu-welcome">Welcome, {user?.displayName}!</p>

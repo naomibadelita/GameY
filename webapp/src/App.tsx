@@ -5,7 +5,7 @@ import { useAuth } from './Auth';
 import './App.css'
 import GameBoard from './GameBoard';
 import GameOver from './GameOver';
-import { boardAtom, boardSizeAtom, connectionErrorAtom, isGameReadyAtom, isOpponentAvailableAtom, isP1TurnAtom, myColorAtom, opponentDisplayNameAtom, opponentIdAtom, rematchRequesterAtom, roomIdAtom, winnerAtom } from './Atoms';
+import { boardAtom, boardSizeAtom, connectionErrorAtom, isGameReadyAtom, isOpponentAvailableAtom, isP1TurnAtom, myColorAtom, opponentDisconnectedAtom, opponentDisplayNameAtom, opponentIdAtom, rematchRequesterAtom, roomIdAtom, winnerAtom } from './Atoms';
 import { createInitialBoard } from '../../shared/CellValue';
 import { sendMessage } from './Connection';
 import { loadStatistics } from './api';
@@ -32,11 +32,13 @@ function App() {
     const setOpponentId = useSetAtom(opponentIdAtom);
     const setRematchRequester = useSetAtom(rematchRequesterAtom);
     const setIsOpponentAvailable = useSetAtom(isOpponentAvailableAtom);
+    const setOpponentDisconnected = useSetAtom(opponentDisconnectedAtom);
     const connectionError = useAtomValue(connectionErrorAtom);
     const serverBoardSize = useAtomValue(boardSizeAtom);
     const roomId = useAtomValue(roomIdAtom);
     const opponentId = useAtomValue(opponentIdAtom);
     const isGameReady = useAtomValue(isGameReadyAtom);
+    const opponentDisconnected = useAtomValue(opponentDisconnectedAtom);
     const boardWinner = useAtomValue(winnerAtom);
     const activeBoardSize = gameId && gameId !== 'new' ? serverBoardSize : safeBoardSize;
 
@@ -63,6 +65,7 @@ function App() {
         setOpponentId(null);
         setRematchRequester(null);
         setIsOpponentAvailable(false);
+        setOpponentDisconnected(false);
         setGameState('playing');
         setWinner(null);
         setEloAfter(null);
@@ -82,7 +85,17 @@ function App() {
             userId: user?.userId ?? null,
             displayName: user?.displayName ?? 'Guest',
         });
-    }, [gameId, activeBoardSize, setBoard, setIsP1Turn, setBoardWinner, setIsGameReady, setMyColor, setRoomId, setOpponentDisplayName, setOpponentId, setRematchRequester, setIsOpponentAvailable, user, isLoading]);
+    }, [gameId, activeBoardSize, setBoard, setIsP1Turn, setBoardWinner, setIsGameReady, setMyColor, setRoomId, setOpponentDisplayName, setOpponentId, setRematchRequester, setIsOpponentAvailable, setOpponentDisconnected, user, isLoading]);
+
+    useEffect(() => {
+        if (!opponentDisconnected) return;
+
+        setOpponentDisconnected(false);
+        navigate('/menu', {
+            replace: true,
+            state: { error: 'Your opponent left the game. The game was closed.' },
+        });
+    }, [navigate, opponentDisconnected, setOpponentDisconnected]);
 
     useEffect(() => {
         if (gameId === 'new' && roomId) {
