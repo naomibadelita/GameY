@@ -5,7 +5,7 @@ import { useAuth } from './Auth';
 import './App.css'
 import GameBoard from './GameBoard';
 import GameOver from './GameOver';
-import { boardAtom, boardSizeAtom, connectionErrorAtom, isGameReadyAtom, isOpponentAvailableAtom, isP1TurnAtom, myColorAtom, opponentDisconnectedAtom, opponentDisplayNameAtom, opponentIdAtom, rematchRequesterAtom, roomIdAtom, winnerAtom } from './Atoms';
+import { boardAtom, boardSizeAtom, connectionErrorAtom, connectionLostAtom, isGameReadyAtom, isOpponentAvailableAtom, isP1TurnAtom, myColorAtom, opponentDisconnectedAtom, opponentDisplayNameAtom, opponentIdAtom, rematchRequesterAtom, roomIdAtom, winnerAtom } from './Atoms';
 import { createInitialBoard } from '../../shared/CellValue';
 import { sendMessage } from './Connection';
 import { loadStatistics } from './api';
@@ -33,12 +33,14 @@ function App() {
     const setRematchRequester = useSetAtom(rematchRequesterAtom);
     const setIsOpponentAvailable = useSetAtom(isOpponentAvailableAtom);
     const setOpponentDisconnected = useSetAtom(opponentDisconnectedAtom);
+    const setConnectionLost = useSetAtom(connectionLostAtom);
     const connectionError = useAtomValue(connectionErrorAtom);
     const serverBoardSize = useAtomValue(boardSizeAtom);
     const roomId = useAtomValue(roomIdAtom);
     const opponentId = useAtomValue(opponentIdAtom);
     const isGameReady = useAtomValue(isGameReadyAtom);
     const opponentDisconnected = useAtomValue(opponentDisconnectedAtom);
+    const connectionLost = useAtomValue(connectionLostAtom);
     const boardWinner = useAtomValue(winnerAtom);
     const activeBoardSize = gameId && gameId !== 'new' ? serverBoardSize : safeBoardSize;
 
@@ -66,6 +68,7 @@ function App() {
         setRematchRequester(null);
         setIsOpponentAvailable(false);
         setOpponentDisconnected(false);
+        setConnectionLost(false);
         setGameState('playing');
         setWinner(null);
         setEloAfter(null);
@@ -85,7 +88,17 @@ function App() {
             userId: user?.userId ?? null,
             displayName: user?.displayName ?? 'Guest',
         });
-    }, [gameId, activeBoardSize, setBoard, setIsP1Turn, setBoardWinner, setIsGameReady, setMyColor, setRoomId, setOpponentDisplayName, setOpponentId, setRematchRequester, setIsOpponentAvailable, setOpponentDisconnected, user, isLoading]);
+    }, [gameId, activeBoardSize, setBoard, setIsP1Turn, setBoardWinner, setIsGameReady, setMyColor, setRoomId, setOpponentDisplayName, setOpponentId, setRematchRequester, setIsOpponentAvailable, setOpponentDisconnected, setConnectionLost, user, isLoading]);
+
+    useEffect(() => {
+        if (!connectionLost) return;
+
+        setConnectionLost(false);
+        navigate('/menu', {
+            replace: true,
+            state: { error: 'Lost connection to server.' },
+        });
+    }, [connectionLost, navigate, setConnectionLost]);
 
     useEffect(() => {
         if (!opponentDisconnected) return;

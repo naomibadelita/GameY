@@ -14,3 +14,4 @@ export const boardSizeAtom = atom<number>(8);
 export const rematchRequesterAtom = atom<string | null>(null);
 export const isOpponentAvailableAtom = atom<boolean>(false);
 export const opponentDisconnectedAtom = atom<boolean>(false);
+export const connectionLostAtom = atom<boolean>(false);

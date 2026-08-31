@@ -1,6 +1,6 @@
 import { getDefaultStore } from "jotai";
 import { type CellValue } from "../../shared/CellValue";
-import { boardAtom, boardSizeAtom, isGameReadyAtom, isP1TurnAtom, winnerAtom, myColorAtom, roomIdAtom, connectionErrorAtom, opponentDisplayNameAtom, opponentIdAtom, rematchRequesterAtom, isOpponentAvailableAtom, opponentDisconnectedAtom } from "./Atoms";
+import { boardAtom, boardSizeAtom, isGameReadyAtom, isP1TurnAtom, winnerAtom, myColorAtom, roomIdAtom, connectionErrorAtom, connectionLostAtom, opponentDisplayNameAtom, opponentIdAtom, rematchRequesterAtom, isOpponentAvailableAtom, opponentDisconnectedAtom } from "./Atoms";
 
 const getWebSocketUrl = (): string => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -30,16 +30,57 @@ function deserializeBoard(s: string): CellValue[][] {
 const store = getDefaultStore();
 const url = getWebSocketUrl();
 console.log(`URL: ${url}`)
-export const ws = new WebSocket(url);
+const pendingMessages: string[] = [];
+let reconnectTimeoutId: number | null = null;
+let ws: WebSocket | null = null;
+
+function handleMessage(ev: MessageEvent) {
+    const data = JSON.parse(ev.data) as ServerMessage;
+    if (!data.type) return;
+    messageHandlers[data.type](data);
+}
+
+function connectWebSocket() {
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        return;
+    }
+
+    const socket = new WebSocket(url);
+    ws = socket;
+    socket.onmessage = handleMessage;
+    socket.onopen = () => {
+        store.set(connectionLostAtom, false);
+        if (reconnectTimeoutId !== null) {
+            window.clearTimeout(reconnectTimeoutId);
+            reconnectTimeoutId = null;
+        }
+
+        while (pendingMessages.length > 0 && socket.readyState === WebSocket.OPEN) {
+            socket.send(pendingMessages.shift()!);
+        }
+    };
+    socket.onclose = () => {
+        if (socket !== ws || reconnectTimeoutId !== null) {
+            return;
+        }
+
+        store.set(connectionLostAtom, true);
+        reconnectTimeoutId = window.setTimeout(() => {
+            reconnectTimeoutId = null;
+            connectWebSocket();
+        }, 1000);
+    };
+}
 
 export function sendMessage(message: Record<string, unknown>) {
     const payload = JSON.stringify(message);
-    if (ws.readyState === WebSocket.OPEN) {
+    if (ws?.readyState === WebSocket.OPEN) {
         ws.send(payload);
         return;
     }
 
-    ws.addEventListener('open', () => ws.send(payload), { once: true });
+    pendingMessages.push(payload);
+    connectWebSocket();
 }
 
 type ServerMessage = {
@@ -126,11 +167,4 @@ const messageHandlers: Record<'update' | 'init' | 'status' | 'rematch_requested'
     rematch_requested: handleRematchRequested,
 };
 
-ws.onmessage = (ev) => {
-    const data = JSON.parse(ev.data) as ServerMessage;
-    if (!data.type) {
-        return;
-    }
-
-    messageHandlers[data.type](data);
-};
+connectWebSocket();
