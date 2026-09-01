@@ -1,18 +1,8 @@
-import { useLocation, useNavigate } from 'react-router-dom';
-import { sendMessage } from './Connection';
+import { useBoardSizeViewModel } from './hooks/useBoardSizeViewModel';
 import './BoardSize.css';
 
-const BOARD_SIZES = [6, 8, 10];
-
 export default function BoardSize() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const privateGame = Boolean((location.state as { privateGame?: boolean } | null)?.privateGame);
-
-  const handleSelectBoardSize = (size: number) => {
-    sendMessage({ type: 'leave_room' });
-    navigate(privateGame ? '/game/new' : '/game', { state: { boardSize: size, privateGame } });
-  };
+  const { state, actions } = useBoardSizeViewModel();
 
   return (
     <div className="board-size-container">
@@ -21,12 +11,12 @@ export default function BoardSize() {
             <p className="board-size">Choose Board Size</p>
 
             <div className="board-size-options">
-            {BOARD_SIZES.map((size) => (
+            {state.availableSizes.map((size) => (
                 <button
                 key={size}
                 type="button"
                 className="board-size-btn primary-btn"
-                onClick={() => handleSelectBoardSize(size)}
+                onClick={() => actions.selectBoardSize(size)}
                 >
                 {size} X {size}
                 </button>

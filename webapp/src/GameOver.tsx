@@ -1,8 +1,5 @@
 import './GameOver.css';
-import { useState } from 'react';
-import { useAuth } from './Auth';
-import { useAtomValue } from 'jotai';
-import { myColorAtom, opponentDisplayNameAtom, opponentIdAtom, rematchRequesterAtom, isOpponentAvailableAtom } from './Atoms';
+import { useGameOverViewModel } from './hooks/useGameOverViewModel';
 
 interface GameOverProps {
     readonly winner: 'B' | 'R';
@@ -14,40 +11,29 @@ interface GameOverProps {
 }
 
 export default function GameOver({ winner, eloBefore, eloAfter, onPlayAgain, onRematch, onMainMenu }: GameOverProps) {
-    const [hasRequestedRematch, setHasRequestedRematch] = useState(false);
-    const { user } = useAuth();
-    const myColor = useAtomValue(myColorAtom);
-    const opponentDisplayName = useAtomValue(opponentDisplayNameAtom);
-    const opponentId = useAtomValue(opponentIdAtom);
-    const rematchRequester = useAtomValue(rematchRequesterAtom);
-    const isOpponentAvailable = useAtomValue(isOpponentAvailableAtom);
-    const winner_text = winner === myColor
-        ? (user?.displayName ?? 'You')
-        : (opponentDisplayName ?? 'Opponent');
-    let rematchButtonText = 'Rematch';
-
-    if (hasRequestedRematch) {
-        rematchButtonText = 'Request sent';
-    } else if (rematchRequester) {
-        rematchButtonText = 'Accept rematch';
-    }
+    const { state, actions } = useGameOverViewModel({
+        winner,
+        eloBefore,
+        eloAfter,
+        onRematch,
+    });
 
     return (
         <div className="game-over-page">
             <div className="game-over-content">
                 <h1 className="game-over-title">GAME OVER</h1>
-                <p className={`game-over-winner ${opponentId ? '' : 'game-over-winner-spaced'}`}>
-                    Winner: {winner_text}
+                <p className={`game-over-winner ${state.opponentId ? '' : 'game-over-winner-spaced'}`}>
+                    Winner: {state.winnerText}
                 </p>
-                {opponentId && eloBefore !== null && eloAfter !== null && (
-                    <p className={`game-over-elo ${eloAfter > eloBefore ? 'game-over-elo-increased' : 'game-over-elo-decreased'}`}>
-                        ELO {eloBefore} → {eloAfter}
+                {state.showElo && (
+                    <p className={`game-over-elo ${state.isEloIncreased ? 'game-over-elo-increased' : 'game-over-elo-decreased'}`}>
+                        ELO {state.eloBefore} → {state.eloAfter}
                     </p>
                 )}
-                {rematchRequester && isOpponentAvailable ? (
-                    <p className="rematch-message">{rematchRequester} requested a rematch.</p>
+                {state.rematchRequester && state.isOpponentAvailable ? (
+                    <p className="rematch-message">{state.rematchRequester} requested a rematch.</p>
                 ) : null}
-                {!isOpponentAvailable ? (
+                {!state.isOpponentAvailable ? (
                     <p className="rematch-message">Opponent left the game.</p>
                 ) : null}
                 <div className="game-over-actions">
@@ -57,13 +43,10 @@ export default function GameOver({ winner, eloBefore, eloAfter, onPlayAgain, onR
                     <button
                         type="button"
                         className="play-again-btn rematch-btn"
-                        onClick={() => {
-                            setHasRequestedRematch(true);
-                            onRematch();
-                        }}
-                        disabled={!isOpponentAvailable || hasRequestedRematch}
+                        onClick={actions.handleRematchClick}
+                        disabled={state.isRematchDisabled}
                     >
-                        {rematchButtonText}
+                        {state.rematchButtonText}
                     </button>
                     <button type="button" className="play-again-btn" onClick={onMainMenu}>
                         Main menu

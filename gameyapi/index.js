@@ -4,7 +4,6 @@ const sqlite3 = require('sqlite3').verbose();
 const { randomUUID } = require('node:crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { resolve } = require('node:dns');
 
 const router = express.Router();
 const db = new sqlite3.Database(path.join(__dirname, 'gameys.db'));
@@ -396,13 +395,10 @@ async function getLeaderboardByWins(res, category) {
 router.get('/leaderboard/:category/:metric', verifyToken, (req, res) => {
   const { category, metric } = req.params;
 
-  switch (metric) {
-    case 'numOfWins':
-      return getLeaderboardByWins(res, category);
-
-    default:
-      return res.status(404).json({ error: 'Metric not found' });
+  if (metric === 'numOfWins') {
+    return getLeaderboardByWins(res, category);
   }
+  return res.status(404).json({ error: 'Metric not found' });
 });
 
 /// Public profile

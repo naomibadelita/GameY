@@ -1,4 +1,3 @@
-import type { BoardState } from "../../shared/CellValue";
 import type { LeaderboardCategory, LeaderboardMetric } from "./leaderboard/domain/leaderboard.types";
 import type { Profile } from "./statistics/domain/profile.entity";
 import type { MatchData, StatisticsData } from "./statistics/domain/statistics.entity";
@@ -36,34 +35,6 @@ export function validateUuid(uuid: string): string {
   return uuid;
 }
 
-export async function createGame(board: BoardState, isPlayer1: boolean, currentPlayer = 'B', status = 'in-progress') {
-  const response = await fetch(`${API_BASE}/game`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ board, isPlayer1, currentPlayer, status }),
-  });
-  return handleResponse(response);
-}
-
-export async function loadGame(id: string) {
-  const validId = validateUuid(id);
-  const response = await fetch(`${API_BASE}/game/${encodeURIComponent(validId)}`, {
-    headers: getAuthHeaders(),
-  });
-  return handleResponse(response);
-}
-
-export async function saveGame(id: string, board: BoardState, opponentId: string | null, isPlayer1: boolean, currentPlayer: string, status: string) {
-  const validId = validateUuid(id);
-  const validOpponentId = opponentId ? validateUuid(opponentId) : null;
-  const response = await fetch(`${API_BASE}/game/${encodeURIComponent(validId)}`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ board, opponentId: validOpponentId, isPlayer1, currentPlayer, status }),
-  });
-  return handleResponse(response);
-}
-
 function getLeaderboardCategoryPath(category: LeaderboardCategory): string {
   switch (category) {
     case 'all': return 'all';
@@ -76,11 +47,10 @@ function getLeaderboardCategoryPath(category: LeaderboardCategory): string {
 }
 
 function getLeaderboardMetricPath(metric: LeaderboardMetric): string {
-  switch (metric) {
-    case 'numOfWins': return 'numOfWins';
-    default:
-      throw new Error('Invalid leaderboard metric');
+  if (metric === 'numOfWins') {
+    return 'numOfWins';
   }
+  throw new Error('Invalid leaderboard metric');
 }
 
 export async function loadLeaderboard(category: LeaderboardCategory, metric: LeaderboardMetric) {

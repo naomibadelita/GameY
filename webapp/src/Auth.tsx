@@ -1,13 +1,11 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
+import { useAuthProviderViewModel } from './hooks/useAuthProviderViewModel';
+import type { User } from './services/authService';
 
-interface User {
-  userId: string;
-  email: string;
-  displayName: string;
-}
+export type { User };
 
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
@@ -20,90 +18,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Load token from localStorage on mount
-  useEffect(() => {
-    const storedToken = localStorage.getItem('authToken');
-    const storedUser = localStorage.getItem('user');
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
-  }, []);
-
-  const API_BASE = '/api';
-
-  const login = async (email: string, password: string) => {
-    const response = await fetch(`${API_BASE}/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Login failed');
-    }
-
-    const data = await response.json();
-    setToken(data.token);
-    const userData = {
-      userId: data.userId,
-      email: data.email,
-      displayName: data.displayName,
-    };
-    setUser(userData);
-    localStorage.setItem('authToken', data.token);
-    localStorage.setItem('user', JSON.stringify(userData));
-  };
-
-  const register = async (email: string, password: string, displayName: string) => {
-    const response = await fetch(`${API_BASE}/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, displayName }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Registration failed');
-    }
-
-    const data = await response.json();
-    setToken(data.token);
-    const userData = {
-      userId: data.userId,
-      email: data.email,
-      displayName: data.displayName,
-    };
-    setUser(userData);
-    localStorage.setItem('authToken', data.token);
-    localStorage.setItem('user', JSON.stringify(userData));
-  };
-
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-  };
-
-  const value = useMemo(
-    () => ({
-      user,
-      token,
-      isAuthenticated: !!user,
-      isLoading,
-      login,
-      register,
-      logout,
-    }),
-    [user, token, isLoading, login, register, logout]
-  );
+  const value = useAuthProviderViewModel();
 
   return (
     <AuthContext.Provider value={value}>
@@ -119,3 +34,4 @@ export function useAuth() {
   }
   return context;
 }
+

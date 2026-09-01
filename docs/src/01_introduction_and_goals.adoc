@@ -44,3 +44,32 @@ The purpose of this project is to develop a full-stack web application for a gam
 | The engine shall implement at least two distinct move-generation strategies for the AI and select the appropriate strategy based on the current game state.
 |===
 
+==== Quality goals
+[cols="1,4"]
+|===
+| ID | Description 
+| Availability
+| The web application and WebSocket API shall be publicly reachable over HTTPS and maintain high availability
+| Usability
+| The frontend should be intuitive, allowing users to easily choose between game strategies and view their statistics and history without a challenging learning process.
+| Performance
+| The backend architecture must handle concurrent matches from both web users and API-based bots without significant latency.
+| Security
+| User data and match histories must be protected via secure authentication, ensuring users can only manage their own profiles
+|===
+
+==== Stakeholders
+[cols="1,1,4"]
+|===
+|Role/Name
+|Contact
+|Expectations
+
+|Development team
+|N/A
+|Receive clear requirements and feedback on time
+
+|Players
+|N/A
+|Get an intuitive, stable and engaging game application
+|===

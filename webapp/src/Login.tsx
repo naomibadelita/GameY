@@ -1,65 +1,27 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from './Auth';
+import { useAuthFormViewModel } from './hooks/useAuthFormViewModel';
 import './Login.css';
 
 export default function Login() {
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { login, register } = useAuth();
-  const navigate = useNavigate();
-
-  const getButtonLabel = () => {
-    if (isLoading) return 'Loading...';
-    return isLogin ? 'Login' : 'Register';
-  };
-
-  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
-    try {
-      if (isLogin) {
-        await login(email, password);
-      } else {
-        if (!displayName.trim()) {
-          setError('Display name is required');
-          setIsLoading(false);
-          return;
-        }
-        await register(email, password, displayName);
-      }
-      navigate('/menu');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { state, actions } = useAuthFormViewModel();
 
   return (
     <div className="login-container">
       <div className="login-box">
         <h1>Game Y</h1>
-        <p className="login-subtitle">{isLogin ? 'Login' : 'Register'}</p>
+        <p className="login-subtitle">{state.isLogin ? 'Login' : 'Register'}</p>
 
-        {error && <div className="error-message">{error}</div>}
+        {state.error ? <div className="error-message">{state.error}</div> : null}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={actions.handleSubmit}>
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input
               id="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={state.email}
+              onChange={(e) => actions.setEmail(e.target.value)}
               required
-              disabled={isLoading}
+              disabled={state.isLoading}
               placeholder="Enter your email"
             />
           </div>
@@ -69,45 +31,42 @@ export default function Login() {
             <input
               id="password"
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={state.password}
+              onChange={(e) => actions.setPassword(e.target.value)}
               required
-              disabled={isLoading}
+              disabled={state.isLoading}
               placeholder="Enter your password"
             />
           </div>
 
-          {!isLogin && (
+          {!state.isLogin ? (
             <div className="form-group">
               <label htmlFor="displayName">Display Name</label>
               <input
                 id="displayName"
                 type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                disabled={isLoading}
+                value={state.displayName}
+                onChange={(e) => actions.setDisplayName(e.target.value)}
+                disabled={state.isLoading}
                 placeholder="How should others see you?"
               />
             </div>
-          )}
+          ) : null}
 
-          <button type="submit" disabled={isLoading} className="submit-btn">
-            {getButtonLabel()}
+          <button type="submit" disabled={state.isLoading} className="submit-btn">
+            {state.buttonLabel}
           </button>
         </form>
 
         <div className="toggle-section">
           <p>
-            {isLogin ? "Don't have an account? " : 'Already have an account? '}
+            {state.isLogin ? "Don't have an account? " : 'Already have an account? '}
             <button
               type="button"
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setError('');
-              }}
+              onClick={actions.toggleMode}
               className="toggle-btn"
             >
-              {isLogin ? 'Register' : 'Login'}
+              {state.isLogin ? 'Register' : 'Login'}
             </button>
           </p>
         </div>

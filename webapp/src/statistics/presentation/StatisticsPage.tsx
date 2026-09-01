@@ -1,123 +1,12 @@
-import { useNavigate } from 'react-router-dom';
-import { useEffect, useRef, useState } from 'react';
-import type { Profile } from '../domain/profile.entity';
-import type { MatchData, StatisticsData } from '../domain/statistics.entity';
-import { loadProfile } from '../data/profile.loader';
-import { loadPageOfMatches, loadStatistic } from '../data/statistics.loader';
+import { useStatisticsViewModel } from './useStatisticsViewModel';
 import './StatisticsPage.css';
 
 export default function StatisticsPage() {
-    const navigate = useNavigate();
-
-    const storedUser = localStorage.getItem('user');
-    const user = storedUser ? JSON.parse(storedUser) : undefined;
-    const uid = typeof user?.userId === 'string' ? user.userId : undefined;
-
-    const [error, setError] = useState('');
-    const [profile, setProfile] = useState<Profile | undefined>(undefined);
-    const [statistics, setStatistics] = useState<StatisticsData | undefined>(undefined);
-
-    const [page, setPage] = useState<number>(0);
-    const [history, setHistory] = useState<MatchData[]>([]);
-    const loadHistoryPage = () => {
-        if (page === -1) return;
-        if (!uid) {
-            setError('User authentication failed.');
-            return;
-        }
-
-        loadPageOfMatches(uid, page, 10)
-            .then((newData) => {
-                setHistory([...history, ...newData]);
-                console.log(`history: ${JSON.stringify(history)}`);
-                const newPage = newData.length === 0 ? -1 : page + 1;
-                setPage(newPage);
-            })
-            .catch((err) => setError(err instanceof Error ? err.message : 'An error occurred'));
-    };
-
-    const init = () => {
-        if (!uid) {
-            setError('User authentication failed.');
-            return;
-        }
-
-        void loadProfile(uid)
-            .then((data) => setProfile(data))
-            .catch((err) => setError(err instanceof Error ? err.message : 'An error occurred'));
-        void loadStatistic(uid)
-            .then((data) => setStatistics(data))
-            .catch((err) => setError(err instanceof Error ? err.message : 'An error occurred'));
-        loadHistoryPage();
-    }
-
-    const loaderRef = useRef<HTMLLIElement | null>(null);
-
-    useEffect(() => { init(); }, []);
-
-    useEffect(() => {
-        const currentLoader = loaderRef.current;
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (!entries[0].isIntersecting) return;
-                loadHistoryPage();
-            },
-            { threshold: 1.0 }
-        );
-
-        if (currentLoader) observer.observe(currentLoader);
-
-        return () => {
-            if (currentLoader) observer.unobserve(currentLoader);
-        };
-    }, [page]);
-
-    const renderPlayer = (player: Profile, result: string, right = false) => {
-        return (
-            <div className={`history-player ${right ? 'history-player-right' : ''}`}>
-                <img
-                    className={`match-player-image match-player-image-${result}`}
-                    src={player.photoUrl ?? 'https://picsum.photos/48'}
-                    alt={`${player.displayName}'s profile`}
-                />
-                <span className={`history-player-name ${result === 'winner' ? 'winner-name' : ''}`}>
-                    {player.displayName}
-                </span>
-            </div>
-        );
-    }
-
-    const renderMatch = (match: MatchData, index: number) => {
-        let player1Result = 'draw';
-        let player2Result = 'draw';
-
-        switch (match.winner) {
-            case 1:
-                player1Result = 'winner';
-                player2Result = 'loser';
-                break;
-            case 2:
-                player1Result = 'loser';
-                player2Result = 'winner';
-                break;
-        }
-
-        return (
-            <li className="history-item" key={index} >
-                {renderPlayer(match.player1, player1Result)}
-
-                <div className="history-match-details">
-                    <span className="board-size">{match.boardSize}</span>
-                </div>
-
-                {renderPlayer(match.player2, player2Result, true)}
-            </li>
-        );
-    }
+    const { state, refs, actions } = useStatisticsViewModel();
 
     const renderContent = () => {
-        if (error) {
-            return <div className="leaderboard-error">{error}</div>;
+        if (state.error) {
+            return <div className="leaderboard-error">{state.error}</div>;
         }
 
         return (
@@ -125,15 +14,43 @@ export default function StatisticsPage() {
                 <h2>Match history</h2>
 
                 <ul className="history-list">
-                    {history.map((element, index) => renderMatch(element, index))}
-                    {history.length === 0 && (
+                    {state.matches.map((match) => (
+                        <li className="history-item" key={match.id}>
+                            <div className="history-player">
+                                <img
+                                    className={`match-player-image match-player-image-${match.player1.result}`}
+                                    src={match.player1.photoUrl}
+                                    alt={`${match.player1.displayName}'s profile`}
+                                />
+                                <span className={`history-player-name ${match.player1.result === 'winner' ? 'winner-name' : ''}`}>
+                                    {match.player1.displayName}
+                                </span>
+                            </div>
+
+                            <div className="history-match-details">
+                                <span className="board-size">{match.boardSize}</span>
+                            </div>
+
+                            <div className="history-player history-player-right">
+                                <img
+                                    className={`match-player-image match-player-image-${match.player2.result}`}
+                                    src={match.player2.photoUrl}
+                                    alt={`${match.player2.displayName}'s profile`}
+                                />
+                                <span className={`history-player-name ${match.player2.result === 'winner' ? 'winner-name' : ''}`}>
+                                    {match.player2.displayName}
+                                </span>
+                            </div>
+                        </li>
+                    ))}
+                    {!state.hasMatches ? (
                         <li className="history-empty">No match history yet.</li>
-                    )}
-                    <li ref={loaderRef} className="history-loader" aria-hidden="true" />
+                    ) : null}
+                    <li ref={refs.loaderRef} className="history-loader" aria-hidden="true" />
                 </ul>
             </div>
         );
-    }
+    };
 
     return (
         <main className="statistics-page">
@@ -143,14 +60,14 @@ export default function StatisticsPage() {
                 <header className="statistics-header">
                     <img
                         className="profile-image"
-                        src={profile?.photoUrl ?? 'https://picsum.photos/96'}
-                        alt={`${profile?.displayName ?? 'Anonymous'}'s profile`}
+                        src={state.profilePhotoUrl}
+                        alt={`${state.profileDisplayName}'s profile`}
                     />
                     <div className="profile-column">
-                        <h2>{profile?.displayName ?? 'Loading profile...'}</h2>
+                        <h2>{state.profileDisplayName}</h2>
                         <div className="elo-row">
                             <span>ELO rating</span>
-                            <strong>{statistics?.elo ?? '-'}</strong>
+                            <strong>{state.eloText}</strong>
                         </div>
                     </div>
                 </header>
@@ -160,7 +77,7 @@ export default function StatisticsPage() {
                 <button
                     type="button"
                     className="statistics-back-button"
-                    onClick={() => navigate('/menu')}
+                    onClick={actions.navigateBack}
                 >
                     Back to game
                 </button>
@@ -168,3 +85,4 @@ export default function StatisticsPage() {
         </main>
     );
 }
+

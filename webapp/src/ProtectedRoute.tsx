@@ -1,14 +1,16 @@
+import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from './Auth';
+import { useProtectedRouteViewModel } from './hooks/useProtectedRouteViewModel';
 
 interface ProtectedRouteProps {
-  readonly children: React.ReactNode;
+  readonly children: ReactNode;
+  readonly redirectTo?: string;
 }
 
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+export default function ProtectedRoute({ children, redirectTo = '/login' }: ProtectedRouteProps) {
+  const { state } = useProtectedRouteViewModel(redirectTo);
 
-  if (isLoading) {
+  if (state.isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
         <p>Loading...</p>
@@ -16,8 +18,8 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  if (!state.canAccess) {
+    return <Navigate to={state.redirectTo} replace />;
   }
 
   return <>{children}</>;
