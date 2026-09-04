@@ -2,8 +2,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
-    padding: 24px 20px;
+    min-height: max(100vh, calc(var(--panel-min-height) + var(--page-vertical-padding) + var(--page-vertical-padding)));
+    padding: var(--page-vertical-padding) 20px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
@@ -12,8 +12,9 @@
     flex-direction: column;
     width: 100%;
     max-width: 720px;
-    height: 700px;
-    max-height: calc(100vh - 48px);
+    height: var(--panel-height);
+    min-height: var(--panel-min-height);
+    max-height: calc(100vh - var(--page-vertical-padding) - var(--page-vertical-padding));
     padding: 32px;
     overflow: hidden;
     border-radius: 12px;
