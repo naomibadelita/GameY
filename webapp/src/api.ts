@@ -74,6 +74,16 @@ export async function loadProfile(uid: string): Promise<Profile> {
   return handleResponse(response);
 }
 
+export async function setProfilePhotoUrl(photoUrl: string | null): Promise<Profile> {
+  const response = await fetch(`${API_BASE}/profile/photo`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ photoUrl }),
+  });
+
+  return handleResponse(response);
+}
+
 export async function loadStatistics(uid: string): Promise<StatisticsData> {
   const validUid = validateUuid(uid);
   const response = await fetch(`${API_BASE}/statistics/${encodeURIComponent(validUid)}`, {

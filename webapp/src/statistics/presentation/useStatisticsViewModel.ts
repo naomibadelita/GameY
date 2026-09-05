@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../Auth';
-import { loadProfile } from '../data/profile.loader';
+import { loadProfile, setPhotoUrl } from '../data/profile.loader';
 import { loadPageOfMatches, loadStatistic } from '../data/statistics.loader';
 import type { Profile } from '../domain/profile.entity';
 import type { MatchData, StatisticsData } from '../domain/statistics.entity';
@@ -36,13 +36,37 @@ export function useStatisticsViewModel() {
     const loadHistoryPage = useCallback(() => {
         if (page === -1 || !uid) return;
 
-        loadPageOfMatches(uid, page, 10)
+        loadPageOfMatches(uid, page, 5)
             .then((newData) => {
                 setHistory((prev) => [...prev, ...newData]);
                 setPage(newData.length === 0 ? -1 : (prev) => prev + 1);
             })
             .catch((err) => setError(err instanceof Error ? err.message : 'An error occurred'));
     }, [uid, page]);
+
+    const selectProfilePhoto = useCallback(async (photoUrl: string | null) => {
+        if (!uid) {
+            setError('User authentication failed.');
+            return;
+        }
+
+        try {
+            const updatedProfile = await setPhotoUrl(photoUrl);
+            setProfile(updatedProfile);
+
+            try {
+                const refreshedHistory = await loadPageOfMatches(uid, 0, Math.max(history.length, 10));
+                setHistory(refreshedHistory);
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Failed to refresh match history');
+            }
+
+            return true;
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred');
+            return false;
+        }
+    }, [uid, history.length]);
 
     useEffect(() => {
         if (!uid) {
@@ -124,6 +148,7 @@ export function useStatisticsViewModel() {
         },
         actions: {
             navigateBack: () => navigate('/menu'),
+            selectProfilePhoto,
         },
     };
 }

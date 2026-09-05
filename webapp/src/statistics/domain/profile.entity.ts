@@ -1,5 +1,5 @@
 export interface Profile {
     displayName: string;
-    photoUrl: string | undefined;
+    photoUrl: string | null;
     // lastActive: number;
 }

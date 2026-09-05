@@ -15,8 +15,10 @@ const PORT = Number(process.env.PORT) || 8080;
 // Send webapp/dist/ to the visitor
 const app = express();
 const distPath = path.join(__dirname, '../../webapp/dist');
+const avatarsPath = path.join(__dirname, '../../assets/avatars');
 app.use(express.json());
 app.use('/api', gameyApiRouter);
+app.use('/avatars', express.static(avatarsPath));
 app.use(express.static(distPath));
 app.get(/^\/(?!api|ws).*/, (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));

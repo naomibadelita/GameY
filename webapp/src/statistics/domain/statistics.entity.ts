@@ -7,6 +7,9 @@ export interface StatisticsData {
     timePlayed: number;
 }
 
+// TODO: Probably MatchData should only contain the UID.
+// Profile has presentation logic (eg. photoUrl) that might change
+// based on how it's presented.
 export interface MatchData {
     player1: Profile;
     player2: Profile;

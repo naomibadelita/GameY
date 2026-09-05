@@ -2,15 +2,21 @@
 .game-board-container {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: safe center;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 20px;
+    margin: 20px 0;
 }
 
 /* Title with who is next */
 .game-board-container h3 {
     color: #333;
     margin-bottom: 20px;
+    position: sticky;
+    left: 0;
+    align-self: flex-start;
+    width: 100%;
+    max-width: 100vw;
+    text-align: center;
 }
 
 .game-player-summary {
@@ -19,6 +25,11 @@
     gap: 10px;
     color: #333;
     font-weight: 600;
+    position: sticky;
+    left: 0;
+    justify-content: center;
+    width: 100%;
+    max-width: 100vw;
 }
 
 .game-player-summary p {

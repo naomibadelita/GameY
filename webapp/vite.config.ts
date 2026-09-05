@@ -13,6 +13,9 @@ export default defineConfig({
         target: 'ws://localhost:8080',
         ws: true,
       },
+      '/avatars': {
+        target: 'http://localhost:8080',
+      },
     },
   },
 })

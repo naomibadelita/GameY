@@ -415,7 +415,7 @@ async function loadProfile(uid) {
       }
       resolve({
         displayName: row.displayName,
-        photoUrl: row.photoUrl, // may be undefined, but it's ok
+        photoUrl: row.photoUrl,
       });
     });
   });
@@ -492,7 +492,7 @@ router.get('/history/:uid/:page/:limit', verifyToken, async (req, res) => {
   try {
     const games = await getUserGames(uid, page, limit);
     const profile = await loadProfile(uid);
-    const anonymousProfile = { displayName: 'Anonymous', photoUrl: undefined };
+    const anonymousProfile = { displayName: 'Anonymous', photoUrl: null };
     const result = await Promise.all(games.map(async (game) => {
       const opponentProfile = game.opponentId
         ? await loadProfile(game.opponentId)
@@ -513,6 +513,45 @@ router.get('/history/:uid/:page/:limit', verifyToken, async (req, res) => {
     const message = err instanceof Error ? err.message : 'Internal server error';
     res.status(status).json({ error: message });
   }
+});
+
+const VALID_AVATAR_URLS = new Set([
+  null,
+  '/avatars/1.png',
+  '/avatars/2.png',
+  '/avatars/3.png',
+  '/avatars/4.png',
+  '/avatars/5.png',
+]);
+
+router.patch('/profile/photo', verifyToken, (req, res) => {
+  const uid = req.userId;
+  const { photoUrl } = req.body;
+
+  if (!VALID_AVATAR_URLS.has(photoUrl)) {
+    return res.status(400).json({ error: 'Invalid profile photo URL' });
+  }
+
+  db.run(
+    'UPDATE users SET photoUrl = ? WHERE id = ?',
+    [photoUrl, uid],
+    async function (err) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      try {
+        res.json(await loadProfile(uid));
+      } catch (error) {
+        const status = error instanceof HttpError ? error.status : 500;
+        const message = error instanceof Error ? error.message : 'Internal server error';
+        res.status(status).json({ error: message });
+      }
+    }
+  );
 });
 
 module.exports = Object.assign(router, { saveFinishedGame });

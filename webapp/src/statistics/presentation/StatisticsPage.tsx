@@ -1,8 +1,18 @@
+import { useState } from 'react';
 import { useStatisticsViewModel } from './useStatisticsViewModel';
+import AvatarPicker from './AvatarPicker';
+import uploadIcon from '../../assets/upload.svg';
 import './StatisticsPage.css';
 
 export default function StatisticsPage() {
     const { state, refs, actions } = useStatisticsViewModel();
+    const [isAvatarPickerOpen, setIsAvatarPickerOpen] = useState(false);
+
+    const handleAvatarSelect = async (photoUrl: string | null) => {
+        const wasUpdated = await actions.selectProfilePhoto(photoUrl);
+        if (!wasUpdated) return;
+        setIsAvatarPickerOpen(false);
+    };
 
     const renderContent = () => {
         if (state.error) {
@@ -58,11 +68,21 @@ export default function StatisticsPage() {
                 <h1>Statistics &amp; History</h1>
 
                 <header className="statistics-header">
-                    <img
-                        className="profile-image"
-                        src={state.profilePhotoUrl}
-                        alt={`${state.profileDisplayName}'s profile`}
-                    />
+                    <button
+                        type='button'
+                        className='profile-image-button'
+                        onClick={() => setIsAvatarPickerOpen(true)}
+                        aria-label='Upload profile picture'
+                    >
+                        <img
+                            className="profile-image"
+                            src={state.profilePhotoUrl}
+                            alt={`${state.profileDisplayName}'s profile`}
+                        />
+                        <span className="profile-image-overlay" aria-hidden="true">
+                            <img src={uploadIcon} alt="" />
+                        </span>
+                    </button>
                     <div className="profile-column">
                         <h2>{state.profileDisplayName}</h2>
                         <div className="elo-row">
@@ -82,6 +102,13 @@ export default function StatisticsPage() {
                     Back to game
                 </button>
             </section>
+
+            {isAvatarPickerOpen ? (
+                <AvatarPicker
+                    onClose={() => setIsAvatarPickerOpen(false)}
+                    onSelect={(photoUrl) => void handleAvatarSelect(photoUrl)}
+                />
+            ) : null}
         </main>
     );
 }
