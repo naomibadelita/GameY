@@ -1,0 +1,89 @@
+== Solution strategy
+
+===Technology Decisions
+The system architecture combines the mandated technical constraints with strategic choices for secure authentication, persistent data storage, and real-time gameplay communication.
+
+[cols="1,2,3", options="header"]
+|===
+| Decision | Technology | Motivation
+
+| **Frontend**
+| React with TypeScript
+| Provides a component-based browser interface for players.
+
+| **Backend**
+| Node.js with Express and TypeScript
+| Provides the REST API, serves the built web application, and coordinates game-related server logic.
+
+| **Real-time communication**
+| WebSockets (`ws`)
+| Sends game events and updated game state to connected players without repeated HTTP requests.
+
+| **Data exchange**
+| JSON
+| Used for REST API requests/responses and WebSocket messages between the frontend and backend.
+
+| **Database**
+| SQLite
+| Stores user accounts, game records, board states, and player statistics in a lightweight local database.
+
+| **Authentication**
+| JWT
+| Lets the backend authenticate API requests after a user logs in.
+
+| **Password security**
+| bcrypt
+| Hashes passwords before they are stored in the SQLite database.
+|===
+
+=== Testing & Documentation Strategy
+
+[cols="1,2,3", options="header"]
+|===
+| Decision | Technology | Motivation
+
+| **Unit testing**
+| Vitest
+| Tests core game-board behavior and lobby matchmaking logic automatically.
+
+| **Test coverage**
+| `@vitest/coverage-v8`
+| Measures which parts of the tested TypeScript code are exercised by the test suite.
+
+| **Architecture documentation**
+| arc42 with AsciiDoc
+| Documents the system context, architecture decisions, runtime behavior, testing approach, and risks in a structured format.
+|===
+
+=== Top-level Decomposition
+
+The system separates the user interface, backend services, game logic, and persistent storage:
+
+* **Webapp (React with TypeScript):** The browser-based presentation layer. It lets users register, log in, select a board size, join games, make moves, and view statistics and leaderboards.
+
+* **Backend server (Node.js, Express, and TypeScript):** Runs on port 8080. It serves the built webapp, exposes REST API endpoints, and hosts the WebSocket endpoint used for real-time game communication.
+
+* **Game management (TypeScript):** Manages player connections, lobbies, private rooms, game state, moves, rematches, and player disconnections.
+
+* **REST API (`gameyapi`, Node.js):** Handles authentication, profiles, game persistence, statistics, match history, and leaderboard data.
+
+* **Database (SQLite):** Stores user accounts, hashed passwords, games, board states, and player statistics.
+
+=== Achievement of Quality Goals
+
+[cols="1,4", options="header"]
+|===
+| Quality Goal | Strategy for Achievement
+
+| **Availability**
+| The web application and backend are separated, allowing each part to be deployed and maintained independently.
+
+| **Usability**
+| The React frontend provides dedicated views for authentication, gameplay, board-size selection, statistics, and match history. Planned AI difficulty levels will give players additional game options.
+
+| **Performance**
+| WebSockets provide low-latency game updates. The planned AI module will be kept separate from the WebSocket connection handling so computational work does not block real-time communication.
+
+| **Security**
+| Passwords are hashed with `bcrypt`, and JWT authentication protects API routes that access profiles, statistics, and match histories.
+|===

@@ -68,7 +68,10 @@ export function useGameViewModel() {
     const rawBoardSize = (location.state as { boardSize?: number | string } | null)?.boardSize ?? 8;
     const selectedBoardSize = Number(rawBoardSize);
     const safeBoardSize = Number.isFinite(selectedBoardSize) && selectedBoardSize > 1 ? selectedBoardSize : 8;
-    const activeBoardSize = gameId && gameId !== 'new' ? serverBoardSize : safeBoardSize;
+    const isBotGame = gameId === 'bot';
+    const activeBoardSize = gameId && gameId !== 'new' && !isBotGame
+        ? serverBoardSize
+        : safeBoardSize;
     const safeBoard = useMemo(() => normalizeBoardForSize(board, activeBoardSize), [board, activeBoardSize]);
 
     // Computed presentation helpers
@@ -134,7 +137,9 @@ export function useGameViewModel() {
         const userId = user?.userId ?? null;
         const displayName = user?.displayName ?? 'Guest';
 
-        if (gameId === 'new') {
+        if (isBotGame) {
+            gameSocketService.createBotGame(activeBoardSize, userId, displayName);
+        } else if (gameId === 'new') {
             gameSocketService.createPrivateRoom(activeBoardSize, userId, displayName);
         } else if (isPrivateGame && gameId) {
             gameSocketService.joinPrivateRoom(gameId, activeBoardSize, userId, displayName);
@@ -143,6 +148,7 @@ export function useGameViewModel() {
         }
     }, [
         gameId,
+        isBotGame,
         activeBoardSize,
         user,
         isLoading,

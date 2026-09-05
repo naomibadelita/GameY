@@ -28,6 +28,10 @@ export function useMainMenuViewModel() {
     navigate('/board-size', { state: { privateGame: true } });
   }, [navigate]);
 
+  const startBotGame = useCallback(() => {
+    navigate('/board-size', { state: { botGame: true } });
+  }, [navigate]);
+
   const viewLeaderboard = useCallback(() => {
     navigate('/leaderboard');
   }, [navigate]);
@@ -49,6 +53,7 @@ export function useMainMenuViewModel() {
     actions: {
       startPublicGame,
       startPrivateGame,
+      startBotGame,
       viewLeaderboard,
       viewStatistics,
       handleLogout,

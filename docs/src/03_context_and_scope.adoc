@@ -1,0 +1,43 @@
+== Context and Scope
+Game Y is a distributed online board-game platform for human players.
+
+== Business Context
+The business context defines how our system interacts with external entities.
+
+[cols="1,2,2", options="header"]
+|===
+|Communication Partner |Inputs |Outputs
+|Human Player
+|Account registration and login data, game moves, and matchmaking or private-room requests.
+|Real-time board updates, personal performance statistics, and historical match records.
+|===
+
+== Technical Context
+The React web application runs in the player's browser. It communicates with the Node.js server, which serves the web application, provides the REST API, manages real-time games, and stores persistent data in SQLite.
+
+[cols="1,1,2", options="header"]
+|===
+|Interface |Protocol and Data Format |Description
+
+|Player browser to Game Y server
+|HTTP; JSON for API requests and responses
+|The browser loads the React single-page application and uses the `/api` REST endpoints for registration, login, profiles, statistics, leaderboards, and match history.
+
+|Player browser to Game Y server
+|WebSocket; JSON messages
+|The browser connects to `/ws` for matchmaking, private rooms, moves, board updates, rematch requests, and connection status.
+
+|Game Y server to SQLite database
+|SQLite database calls
+|The server stores user accounts, game records, player statistics, and leaderboard data in the local `gameys.db` database.
+|===
+
+=== Mapping Input/Output to Channels
+
+* *Game flow:* Players join a lobby, create or join a private room, and submit moves through a WebSocket connection. The React webapp sends JSON messages to the Node.js server, which validates and manages the game state. Updated game state is sent back to both players as JSON WebSocket messages.
+
+* *Authentication flow:* Users register and log in through HTTP `POST` requests to the REST API. Credentials are sent as JSON. The server stores user data in SQLite and returns a JSON response containing a JWT authentication token.
+
+* *Statistics and leaderboard flow:* The React webapp requests profile data, match history, statistics, and leaderboard data through REST API `GET` requests. The backend reads the required information from SQLite and returns it as JSON.
+
+* *Persistence:* The backend stores users, game records, board states, and player statistics in a local SQLite database.

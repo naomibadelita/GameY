@@ -1,0 +1,167 @@
+== Building Block View
+
+The Building Block View describes the static structure of Game Y. It shows the main subsystems, their responsibilities, and how they interact to provide authentication, persistent game data, and real-time multiplayer gameplay.
+
+=== Level 1: Overall System
+
+Level 1 presents the main building blocks of Game Y: the React webapp, the Node.js backend server, the REST API, the game-management component, and the SQLite database.
+
+[plantuml, level1-whitebox, png]
+----
+@startuml
+skinparam componentStyle uml2
+
+package "Game Y System" {
+    component [Webapp] as webapp <<React / TypeScript>>
+    component [Backend Server] as server <<Node.js / Express>>
+    component [Game Manager] as gameManager <<TypeScript>>
+    component [REST API] as api <<Node.js>>
+    database "SQLite" as database <<Database>>
+}
+
+webapp --> server : "HTTP / JSON\nWebSocket / JSON"
+server --> gameManager : "Game events and state"
+server --> api : "REST API routing"
+api --> database : "SQLite queries"
+
+note right of database
+  Stores user accounts,
+  game records, board states,
+  statistics, and match history.
+end note
+@enduml
+----
+
+==== Component Descriptions
+
+[cols="1,3", options="header"]
+|===
+| Name | Responsibility
+
+| **Webapp**
+| Provides the browser interface for authentication, game setup, multiplayer gameplay, statistics, and leaderboards.
+
+| **Backend Server**
+| Serves the built webapp, exposes the REST API under `/api`, and accepts real-time WebSocket connections at `/ws`.
+
+| **Game Manager**
+| Manages player connections, matchmaking, private rooms, turns, moves, game state, rematches, and disconnections.
+
+| **REST API**
+| Handles registration, login, profiles, game persistence, statistics, match history, and leaderboard requests.
+
+| **SQLite**
+| Persists user accounts, password hashes, game records, board states, and player statistics.
+|===
+
+//==============================================================================
+=== Level 2: Webapp
+
+The webapp is a React and TypeScript single-page application. It displays the user interface and communicates with the backend through REST requests and a WebSocket connection.
+
+[plantuml, webapp-level2, png]
+----
+@startuml
+skinparam componentStyle uml2
+
+package "Webapp (webapp/src/)" {
+  component [App] as app
+  component [Authentication] as auth
+  component [Main Menu and Board Size] as menu
+  component [Game Board] as board
+  component [Statistics and Leaderboard] as statistics
+  component [API Client] as api
+  component [Game Socket Service] as socket
+}
+
+app --> auth : "Displays"
+app --> menu : "Displays"
+app --> board : "Displays"
+app --> statistics : "Displays"
+auth --> api : "HTTP / JSON"
+statistics --> api : "HTTP / JSON"
+board --> socket : "WebSocket / JSON"
+@enduml
+----
+
+==== Component Descriptions
+
+[cols="1,3", options="header"]
+|===
+| Component | Detailed Responsibility
+
+| `main.tsx` and `App.tsx`
+| Start the React application and render the current game view.
+
+| Authentication
+| Provides registration and login forms, stores the received JWT in browser storage, and protects authenticated views.
+
+| Main Menu and Board Size
+| Lets a player choose a board size and join a public lobby or private room.
+
+| Game Board
+| Renders the game board and lets the player make moves during a multiplayer match.
+
+| Statistics and Leaderboard
+| Displays player profiles, match history, statistics, and leaderboard data.
+
+| `api.ts` and `authService.ts`
+| Send HTTP requests to the REST API and process JSON responses.
+
+| `gameSocketService.ts`
+| Maintains the WebSocket connection and exchanges JSON game messages with the backend.
+|===
+
+//==============================================================================
+=== Level 2: Backend
+
+The backend is a Node.js application. It combines an Express server for REST requests with a WebSocket server for real-time multiplayer communication.
+
+[plantuml, backend-level2, png]
+----
+@startuml
+skinparam componentStyle uml2
+
+package "Backend (server/ and gameyapi/)" {
+  component [Express Server] as express
+  component [WebSocket Server Manager] as websocket
+  component [Game Manager] as gameManager
+  component [REST API Router] as api
+  component [Authentication] as auth
+  component [Game Persistence] as persistence
+}
+database "SQLite" as database
+
+express --> api : "Routes /api requests"
+express --> websocket : "Routes /ws connections"
+websocket --> gameManager : "Connection and game events"
+api --> auth : "JWT verification"
+api --> persistence : "User and game data"
+persistence --> database : "SQLite queries"
+@enduml
+----
+
+==== Component Descriptions
+
+[cols="1,3", options="header"]
+|===
+| Component | Detailed Responsibility
+
+| `index.ts`
+| Creates the Express and WebSocket servers, serves the compiled webapp, and registers the REST API router.
+
+| `WebSocketServerManager.ts`
+| Accepts WebSocket connections, parses incoming JSON messages, and forwards connection, message, and close events to the game manager.
+
+| `GameManager.ts`
+| Coordinates multiplayer games, including lobbies, private rooms, valid moves, player turns, rematches, and connection loss.
+
+| `gameyapi/index.js`
+| Implements REST endpoints for authentication, profile data, statistics, match history, leaderboard data, and game persistence.
+
+| Authentication
+| Uses `bcryptjs` to hash and verify passwords and `jsonwebtoken` to issue and validate JWTs.
+
+| SQLite database
+| Stores users and finished games, including board state, player results, and Elo ratings.
+|===

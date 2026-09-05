@@ -1,0 +1,43 @@
+== Testing
+
+This section describes the automated testing currently implemented for Game Y and the continuous-integration checks that run the test suite.
+
+=== Automated Testing
+
+The project uses Vitest as its test runner. Tests focus on core game behavior and matchmaking logic.
+
+* **Technology:**
+** **Vitest:** Runs TypeScript tests from the repository test suite.
+** **@vitest/coverage-v8:** Supports code-coverage reporting when coverage is enabled.
+
+* **Current test coverage:**
+** **Board logic:** Tests verify board creation, valid moves, occupied-cell handling, and win detection.
+** **Lobby matchmaking:** Tests verify that players can be matched into games according to the matchmaking rules.
+
+Tests are located in the `tests/` directory. The test suite can be run from the project root with:
+
+[source,bash]
+----
+npm run test
+----
+
+=== Continuous Integration
+
+GitHub Actions runs the Vitest test suite automatically:
+
+* when changes are pushed to the `main` branch; and
+* when a pull request is opened or updated.
+
+The workflow installs the project dependencies and executes `npm run test`. A failing test causes the CI workflow to fail.
+
+=== Current Testing Limitations
+
+The current automated tests focus on the board and matchmaking logic. The following areas are not yet covered by automated tests:
+
+* REST API authentication and authorization;
+* SQLite persistence;
+* WebSocket connection, disconnection, and rematch behavior;
+* React component behavior and browser-based end-to-end flows;
+* performance and load testing.
+
+These areas should be prioritized in future iterations before deploying the application publicly.

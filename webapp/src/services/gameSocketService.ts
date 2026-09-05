@@ -154,6 +154,15 @@ export class GameSocketService {
         });
     }
 
+    public createBotGame(boardSize: number, userId: string | null, displayName: string): void {
+        this.sendMessage({
+            type: 'create_bot_game',
+            boardSize,
+            userId,
+            displayName,
+        });
+    }
+
     public joinPrivateRoom(roomId: string, boardSize: number, userId: string | null, displayName: string): void {
         this.sendMessage({
             type: 'join_private_room',

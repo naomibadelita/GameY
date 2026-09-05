@@ -1,0 +1,56 @@
+== Risks and Technical Debts
+
+The following table lists technical risks and debts identified in the current Game Y implementation. Risks are potential problems that may affect security, reliability, or scalability. Technical debts are incomplete or simplified implementation choices that should be addressed before a public production deployment.
+
+[cols="1,1,3,4", options="header"]
+|===
+| Priority | Type | Name & Description | Mitigation Strategy / Next Steps
+
+| High
+| Risk
+| **Missing authorization ownership checks** +
+The REST API verifies that a JWT is valid, but some endpoints accept a user ID in the URL without verifying that it matches the authenticated user. A logged-in user may be able to request another user's profile, statistics, or match history.
+| Compare `req.userId` from the JWT with the requested user ID on private endpoints. Return HTTP 403 when they do not match. Keep only deliberately public data, such as limited profile information, accessible to other users.
+
+| High
+| Risk
+| **WebSocket messages are not authenticated** +
+The WebSocket connection accepts `userId` and `displayName` values from client messages. The server currently trusts these client-provided values when managing a player session.
+| Authenticate the WebSocket connection using a JWT during connection setup. Derive the user ID and display name from the verified token instead of accepting them from WebSocket messages.
+
+| High
+| Risk
+| **Default JWT secret in source code** +
+The API uses a fallback JWT secret when the `JWT_SECRET` environment variable is not set. If deployed with this default value, tokens could be forged.
+| Require `JWT_SECRET` at startup in production and fail fast when it is missing. Store a strong secret only in the deployment environment.
+
+| Medium
+| Risk
+| **No rate limiting** +
+Registration, login, and other REST endpoints have no request-rate limit. This may allow password-guessing attempts or excessive requests.
+| Add `express-rate-limit` to sensitive REST endpoints. Configure rate limits at the reverse proxy when deployed publicly.
+
+| Medium
+| Debt
+| **Active game rooms are stored only in memory** +
+The game manager stores lobbies, rooms, board state, and rematch requests in memory. A server restart disconnects players and loses unfinished matches.
+| Persist active game state or introduce a recovery strategy. At minimum, clearly notify players when an active match cannot be recovered after a restart.
+
+| Medium
+| Risk
+| **SQLite limits horizontal scaling** +
+SQLite is appropriate for a lightweight single-server deployment, but concurrent access and scaling across multiple backend instances would be difficult.
+| Retain SQLite for local and small-scale use. Migrate to a managed relational database such as PostgreSQL if multi-instance deployment or higher traffic becomes necessary.
+
+| Low
+| Debt
+| **Limited automated test scope** +
+Vitest tests cover board behavior and matchmaking, but the repository does not currently include automated REST API, WebSocket integration, browser end-to-end, or security tests.
+| Add focused tests for JWT authorization, WebSocket authentication, game completion persistence, disconnect handling, and important frontend flows.
+
+| Low
+| Debt
+| **Incomplete production observability** +
+The backend writes basic messages to the console, but there is no structured logging, health monitoring, or alerting configuration.
+| Add structured logs and a health-check endpoint. Configure application monitoring and alerts before public deployment.
+|===

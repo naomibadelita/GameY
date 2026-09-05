@@ -1,0 +1,71 @@
+== Cross-cutting Concepts
+
+=== Domain Concepts
+
+==== Game Y Board and Rules
+
+Game Y uses a variable-sized triangular board. Each cell has neighboring cells and may contain a Blue piece, a Red piece, or remain empty. A player wins by creating a connected path that reaches all three sides of the board.
+
+The backend validates moves by checking whether a cell is empty, updating the cell color, and determining whether the new connected group reaches all three board sides.
+
+==== Game State
+
+An active match is managed in memory by the backend game manager. Each game room contains the board, board size, current player, connected players, and rematch state.
+
+The board is serialized as a string for WebSocket game-state messages. Completed games are stored in SQLite so that match history, statistics, and leaderboard data remain available after the game ends.
+
+==== Frontend State Management
+
+The React webapp manages its user-interface state with React hooks and Jotai atoms. This includes the displayed board, selected board size, player color, room identifier, opponent information, turn state, connection status, and game result.
+
+=== Security Concepts
+
+==== Authentication and Password Storage
+
+Users can register and log in through the REST API. Passwords are hashed with `bcryptjs` before being stored in SQLite. Plaintext passwords are not stored.
+
+==== JWT-based Authentication
+
+After a successful registration or login, the backend returns a JSON Web Token (JWT). The webapp stores the token in `localStorage` and includes it in the `Authorization: Bearer <token>` header for protected REST API requests.
+
+The backend verifies the JWT before providing profile, statistics, match-history, leaderboard, and game-persistence data.
+
+=== Communication and Integration Concepts
+
+==== RESTful JSON API
+
+The webapp communicates with the REST API through HTTP requests under `/api`. REST endpoints are used for registration, login, profiles, statistics, match history, leaderboard data, and persisted game data.
+
+Requests and responses use JSON.
+
+==== Real-Time WebSocket Communication
+
+The webapp connects to the backend WebSocket endpoint at `/ws`. WebSocket messages use JSON and support lobby matchmaking, private rooms, moves, game-state updates, rematches, and disconnection notifications.
+
+WebSockets allow the backend to send game updates to connected players immediately, without requiring repeated HTTP polling.
+
+==== Same-Origin Development Setup
+
+In development, the Vite web server proxies `/api` and `/ws` requests to the backend at port `8080`. In production, the Node.js server serves both the built webapp and backend endpoints from the same origin.
+
+=== Testing and Quality Assurance
+
+==== Automated Tests
+
+The project uses Vitest for automated unit tests. Current tests cover core board behavior and lobby matchmaking behavior.
+
+A GitHub Actions workflow runs the test suite for pushes to the `main` branch and for pull requests.
+
+==== Static Analysis
+
+The repository contains SonarCloud project configuration for static code analysis. Its configuration identifies the game logic source code and Vitest test directory.
+
+=== Development and Operational Concepts
+
+==== Documentation Strategy
+
+Architecture documentation is maintained as AsciiDoc files using the arc42 structure. PlantUML is used to generate architecture diagrams from source-controlled text definitions.
+
+==== Source Control and Collaboration
+
+The project is maintained in Git. Changes can be reviewed through pull requests, while the continuous-integration workflow automatically runs the test suite for relevant changes.

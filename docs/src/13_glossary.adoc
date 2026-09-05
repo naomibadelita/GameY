@@ -1,0 +1,81 @@
+== Glossary
+
+[options="header",cols="1,3"]
+|===
+| Term | Definition
+
+| ADR
+| Architectural Decision Record - a document that records an important architectural decision, its context, rationale, and consequences.
+
+| arc42
+| A template for documenting software and system architectures. This documentation follows its structure.
+
+| Authentication
+| The process of verifying a user's identity when they register or log in.
+
+| Backend
+| The Node.js application that serves the webapp, provides the REST API, manages WebSocket connections, and coordinates game logic.
+
+| Board
+| The variable-sized triangular game board. It consists of cells that can be empty or contain a Blue or Red piece.
+
+| `bcryptjs`
+| A library used to hash passwords before they are stored and to verify passwords during login.
+
+| CI
+| Continuous Integration - automated checks that run when changes are pushed or submitted through pull requests.
+
+| Elo Rating
+| A numeric rating used to represent a player's relative game performance. It is updated after completed matches.
+
+| Express
+| A Node.js framework used to implement the HTTP server and REST API.
+
+| FR
+| Functional Requirement - a requirement that specifies a function the system must perform.
+
+| Game Manager
+| The backend component that manages players, lobbies, private rooms, moves, turns, game state, rematches, and disconnections.
+
+| Game Y
+| The connection-based board game implemented by this project. A player wins by connecting all three sides of the triangular board.
+
+| GitHub Actions
+| The automation platform used to run the Vitest test suite for pushes and pull requests.
+
+| JSON
+| JavaScript Object Notation - the data format used for REST API requests/responses and WebSocket game messages.
+
+| JWT
+| JSON Web Token - a signed token returned after login or registration and used to authenticate protected REST API requests.
+
+| Node.js
+| The JavaScript runtime used to run the backend server and REST API.
+
+| PlantUML
+| A tool that generates UML diagrams from text definitions in the architecture documentation.
+
+| React
+| A JavaScript library used to create the browser-based user interface.
+
+| REST API
+| The HTTP interface under `/api` used for registration, login, profiles, statistics, match history, leaderboard data, and game persistence.
+
+| SQLite
+| A lightweight relational database used to store users, finished games, statistics, and Elo ratings.
+
+| TypeScript
+| A typed superset of JavaScript used for the React frontend, backend server, and game logic.
+
+| Vite
+| The development server and build tool used by the React webapp.
+
+| Vitest
+| The test framework used for automated tests of the board logic and lobby matchmaking.
+
+| Webapp
+| The React frontend application that players use in a web browser.
+
+| WebSocket
+| A persistent two-way browser-server connection. Game Y uses it at `/ws` for real-time lobby, move, rematch, and connection-status messages.
+|===

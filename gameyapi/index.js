@@ -247,15 +247,15 @@ function updateElo(userId, opponentId, hasWon, callback) {
   );
 }
 
-function saveFinishedGame(board, currentPlayer, players) {
+function saveFinishedGame(board, winner, players) {
   return new Promise((resolve) => {
     const now = Date.now();
     players.filter((player) => player.userId).forEach((player) => {
       const opponent = players.find((item) => item.color !== player.color);
-      const hasWon = player.color !== currentPlayer;
+      const hasWon = player.color === winner;
       db.run(
         'INSERT INTO games (id, userId, opponentId, isPlayer1, board, currentPlayer, status, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [randomUUID(), player.userId, opponent?.userId ?? null, player.color === 'B', JSON.stringify(board), currentPlayer, 'finished', now]
+        [randomUUID(), player.userId, opponent?.userId ?? null, player.color === 'B', JSON.stringify(board), winner, 'finished', now]
       );
       db.run(
         'UPDATE users SET matchesPlayed = matchesPlayed + 1, matchesWon = matchesWon + ?, lastActive = ? WHERE id = ?',
@@ -264,7 +264,7 @@ function saveFinishedGame(board, currentPlayer, players) {
     });
 
     if (players[0]?.userId && players[1]?.userId) {
-      updateElo(players[0].userId, players[1].userId, players[0].color !== currentPlayer, resolve);
+      updateElo(players[0].userId, players[1].userId, players[0].color === winner, resolve);
     } else {
       resolve();
     }
@@ -349,8 +349,8 @@ function getGamesData(processData, offset = 0, limit = -1) {
 
 function hasUserWon(game) {
   const isPlayer1 = Boolean(game.isPlayer1);
-  return (isPlayer1 && game.currentPlayer === 'R') ||
-    (!isPlayer1 && game.currentPlayer === 'B');
+  return (isPlayer1 && game.currentPlayer === 'B') ||
+    (!isPlayer1 && game.currentPlayer === 'R');
 }
 
 async function replaceUidWithName(data) {

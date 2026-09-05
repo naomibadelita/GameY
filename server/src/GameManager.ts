@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { Board, MoveResult } from '../../gamey/Board';
 import { ISubscriber } from './Interfaces';
 import { type CellValue } from "../../shared/CellValue";
+import { GameBot } from '../../gamey/GameBot';
 
 class PlayerData {
     ws: WebSocket;
@@ -29,9 +30,13 @@ type RoomState = {
     currentPlayer: 'R' | 'B';
     players: PlayerData[];
     rematchPlayers: Set<WebSocket>;
+    isBotGame: boolean;
+    winner: 'R' | 'B' | '.';
 };
 
 export class GameManager implements ISubscriber {
+    private readonly bot = new GameBot();
+
     board: Board;
     boardSize: number;
     currentPlayer: 'R' | 'B' = 'B';
@@ -128,32 +133,71 @@ export class GameManager implements ISubscriber {
         });
     }
 
-    private async onWin(room: RoomState) {
+    private async onWin(room: RoomState, winner: 'R' | 'B') {
         const { default: gameyApiRouter } = await import('../../gameyapi/index.js');
 
         return gameyApiRouter.saveFinishedGame(
             room.board.rows.map((row) => row.map((node) => node.color)),
-            room.currentPlayer,
+            winner,
             room.players,
         );
     }
 
     private async onMove(room: RoomState, data: any) {
+        if (
+            room.winner !== '.' ||
+            !Number.isInteger(data.x) ||
+            !Number.isInteger(data.y) ||
+            data.y < 0 ||
+            data.y >= room.board.rows.length ||
+            data.x < 0 ||
+            data.x > data.y
+        ) {
+            return;
+        }
+
         const result = room.board.placePiece(data.y, data.x, data.color);
-        if (result === MoveResult.OCCUPIED) return;
 
-        this.changeCurrentPlayer(room);
-        const winner = result === MoveResult.VICTORY ? data.color : '.';
-        if (result === MoveResult.VICTORY) await this.onWin(room);
+        if (result === MoveResult.OCCUPIED) {
+            return;
+        }
 
-        const message = {
+        let winner: 'R' | 'B' | '.' =
+            result === MoveResult.VICTORY ? data.color : '.';
+
+        if (room.isBotGame && winner === '.') {
+            const botMove = this.bot.chooseMove(room.board, 'R', 'B');
+
+            if (botMove !== null) {
+                const botResult = room.board.placePiece(
+                    botMove.row,
+                    botMove.column,
+                    'R',
+                );
+
+                if (botResult === MoveResult.VICTORY) {
+                    winner = 'R';
+                }
+            }
+
+            room.currentPlayer = 'B';
+        } else if (!room.isBotGame) {
+            this.changeCurrentPlayer(room);
+        }
+
+        if (winner !== '.') {
+            room.winner = winner;
+            void this.onWin(room, winner).catch((error) => {
+                console.error('Failed to save finished game:', error);
+            });
+        }
+
+        this.broadcastRoom(room, {
             type: 'update',
             board: this.serializeBoard(room.board),
             isP1Turn: room.currentPlayer === 'B',
             winner,
-            roomId: room.id,
-        };
-        this.broadcastRoom(room, message);
+        });
     }
 
     private matchPlayers(playerA: PlayerData, playerB: PlayerData) {
@@ -185,6 +229,8 @@ export class GameManager implements ISubscriber {
             currentPlayer: 'B',
             players: [playerA, playerB],
             rematchPlayers: new Set(),
+            isBotGame: false,
+            winner: '.',
         };
 
         playerA.roomId = roomId;
@@ -204,7 +250,7 @@ export class GameManager implements ISubscriber {
             type: 'update',
             board: this.serializeBoard(room.board),
             isP1Turn: room.currentPlayer === 'B',
-            winner: '.',
+            winner: room.winner,
             roomId: room.id,
         };
 
@@ -212,18 +258,24 @@ export class GameManager implements ISubscriber {
             if (player.ws.readyState !== player.ws.OPEN) {
                 return;
             }
-            const opponent = room.players.find((roomPlayer) => roomPlayer.ws !== player.ws);
+           const opponent = room.players.find((roomPlayer) => roomPlayer.ws !== player.ws);
+
             player.ws.send(JSON.stringify({
                 type: 'init',
                 myColor: player.color,
-                opponentDisplayName: opponent?.displayName ?? null,
-                opponentId: opponent?.userId,
+                opponentDisplayName: room.isBotGame
+                    ? 'Bot'
+                    : opponent?.displayName ?? null,
+                opponentId: room.isBotGame
+                    ? null
+                    : opponent?.userId,
                 boardSize: room.boardSize,
                 roomId: room.id,
             }));
+
             player.ws.send(JSON.stringify({
                 type: 'status',
-                isGameReady: room.players.length === 2,
+                isGameReady: room.isBotGame || room.players.length === 2,
                 boardSize: room.boardSize,
                 roomId: room.id,
             }));
@@ -249,12 +301,52 @@ export class GameManager implements ISubscriber {
             currentPlayer: 'B',
             players: [player],
             rematchPlayers: new Set(),
+            isBotGame: false,
+            winner: '.',
         };
 
         player.roomId = roomId;
         this.rooms.set(roomId, room);
         this.players.push(player);
         this.waitingPlayers = this.waitingPlayers.filter((waitingPlayer) => waitingPlayer.ws !== ws);
+        this.sendRoomState(room);
+    }
+
+    private createBotGame(
+        ws: WebSocket,
+        requestedSize: number,
+        userId: string | null,
+        displayName: string | null,
+    ) {
+        const player = this.getConnectedPlayer(ws);
+
+        if (!player || this.getRoomForPlayer(ws)) {
+            return;
+        }
+
+        player.userId = userId;
+        player.displayName = displayName;
+        player.boardSize = requestedSize;
+        player.color = 'B';
+
+        const roomId = this.createRoomId();
+        const room: RoomState = {
+            id: roomId,
+            boardSize: requestedSize,
+            board: new Board(requestedSize),
+            currentPlayer: 'B',
+            players: [player],
+            rematchPlayers: new Set(),
+            isBotGame: true,
+            winner: '.',
+        };
+
+        player.roomId = roomId;
+        this.rooms.set(roomId, room);
+        this.players.push(player);
+        this.waitingPlayers = this.waitingPlayers.filter(
+            (waitingPlayer) => waitingPlayer.ws !== ws,
+        );
         this.sendRoomState(room);
     }
 
@@ -268,6 +360,16 @@ export class GameManager implements ISubscriber {
 
         if (room.players.some((roomPlayer) => roomPlayer.ws === ws)) {
             this.sendRoomState(room);
+            return;
+        }
+
+        if (room.isBotGame) {
+            ws.send(JSON.stringify({
+                type: 'status',
+                isGameReady: false,
+                roomId: null,
+                error: 'This game is against the bot.',
+            }));
             return;
         }
 
@@ -293,6 +395,16 @@ export class GameManager implements ISubscriber {
 
     private requestRematch(ws: WebSocket) {
         const room = this.getRoomForPlayer(ws);
+
+        if (room?.isBotGame) {
+            room.board = new Board(room.boardSize);
+            room.currentPlayer = 'B';
+            room.winner = '.';
+            room.rematchPlayers.clear();
+            this.sendRoomState(room);
+            return;
+        }
+
         if (room?.players.length !== 2) {
             return;
         }
@@ -305,7 +417,7 @@ export class GameManager implements ISubscriber {
         if (room.rematchPlayers.size < 2) {
             const requester = room.players.find((player) => player.ws === ws);
             const opponent = room.players.find((player) => player.ws !== ws);
-            if (opponent?.ws.readyState === opponent.ws.OPEN) {
+            if (opponent && opponent.ws.readyState === opponent.ws.OPEN) {
                 opponent.ws.send(JSON.stringify({
                     type: 'rematch_requested',
                     requesterDisplayName: requester?.displayName ?? 'Opponent',
@@ -317,6 +429,7 @@ export class GameManager implements ISubscriber {
 
         room.board = new Board(room.boardSize);
         room.currentPlayer = 'B';
+        room.winner = '.';
         room.players.forEach((player) => {
             player.color = player.color === 'B' ? 'R' : 'B';
         });
@@ -379,6 +492,19 @@ export class GameManager implements ISubscriber {
         }
     }
 
+    private handleCreateBotGame(ws: WebSocket, message: any) {
+    const requestedSize = Number(message.boardSize);
+
+    if (!Number.isNaN(requestedSize) && requestedSize > 1) {
+        this.createBotGame(
+            ws,
+            requestedSize,
+            message.userId ?? null,
+            message.displayName ?? null,
+        );
+    }
+}
+
     private handleJoinPrivateRoom(ws: WebSocket, message: any) {
         if (typeof message.roomId === 'string') {
             this.joinPrivateRoom(ws, message.roomId, message.userId ?? null, message.displayName ?? null);
@@ -401,6 +527,9 @@ export class GameManager implements ISubscriber {
                 return;
             case 'create_private_room':
                 this.handleCreatePrivateRoom(ws, message);
+                return;
+            case 'create_bot_game':
+                this.handleCreateBotGame(ws, message);
                 return;
             case 'join_private_room':
                 this.handleJoinPrivateRoom(ws, message);

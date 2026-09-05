@@ -1,0 +1,129 @@
+== Runtime View
+
+This section describes the dynamic behavior of Game Y. It shows how the React webapp, Node.js backend, WebSocket game manager, REST API, and SQLite database cooperate during key user scenarios.
+
+=== Scenario 1: User Authentication
+
+*Description:* A user registers or logs in through the webapp.
+*Trigger:* The user submits the registration or login form.
+*Endpoint(s):* `POST /api/register` and `POST /api/login`.
+
+[plantuml, authentication-runtime, png]
+----
+@startuml
+autonumber
+actor Player
+participant "React Webapp" as Webapp
+participant "REST API" as API
+database SQLite
+
+Player -> Webapp : Submit credentials
+Webapp -> API : POST /api/register or /api/login\nJSON credentials
+API -> SQLite : Create user or find user
+API -> API : Hash/verify password with bcrypt\nCreate JWT
+API --> Webapp : JSON response with JWT and user data
+Webapp -> Webapp : Store JWT in localStorage
+@enduml
+----
+
+=== Scenario 2: Matchmaking and Game Start
+
+*Description:* A player joins the public lobby or creates/joins a private room.
+*Trigger:* The player selects a board size and starts a game.
+*Channel:* WebSocket `/ws`.
+
+[plantuml, matchmaking-runtime, png]
+----
+@startuml
+autonumber
+actor "Player 1" as P1
+actor "Player 2" as P2
+participant "React Webapp" as Webapp
+participant "WebSocket Server Manager" as Socket
+participant "Game Manager" as Manager
+
+P1 -> Webapp : Start game
+Webapp -> Socket : join_lobby JSON message
+Socket -> Manager : Forward message
+Manager --> Webapp : status: waiting for opponent
+
+P2 -> Webapp : Start game
+Webapp -> Socket : join_lobby JSON message
+Socket -> Manager : Forward message
+Manager -> Manager : Match players with same board size
+Manager --> Webapp : init, status, and board state\nJSON WebSocket messages
+@enduml
+----
+
+=== Scenario 3: Multiplayer Move
+
+*Description:* A player makes a move during an active match.
+*Trigger:* The player selects an empty board cell.
+*Channel:* WebSocket `/ws`.
+
+[plantuml, multiplayer-move-runtime, png]
+----
+@startuml
+autonumber
+actor Player
+participant "React Webapp" as Webapp
+participant "WebSocket Server Manager" as Socket
+participant "Game Manager" as Manager
+
+Player -> Webapp : Select board cell
+Webapp -> Socket : move JSON message\n(x, y, color, roomId)
+Socket -> Manager : Forward parsed message
+Manager -> Manager : Validate room, turn, and move
+Manager -> Manager : Update board and check winner
+Manager --> Webapp : update JSON message\n(updated board and game state)
+Webapp -> Player : Render updated board
+@enduml
+----
+
+=== Scenario 4: Match Completion and Persistence
+
+*Description:* When a player wins, the completed game and player statistics are stored.
+*Trigger:* A valid move produces a winning board state.
+*Channel:* Internal backend call and SQLite queries.
+
+[plantuml, match-completion-runtime, png]
+----
+@startuml
+autonumber
+participant "Game Manager" as Manager
+participant "REST API Module" as API
+database SQLite
+participant "React Webapp" as Webapp
+
+Manager -> Manager : Detect winning move
+Manager -> API : saveFinishedGame(...)
+API -> SQLite : Store completed game\nUpdate matches and Elo
+Manager --> Webapp : update JSON message\nwith winner
+Webapp -> Webapp : Display game-over view
+@enduml
+----
+
+=== Scenario 5: Statistics and Leaderboard
+
+*Description:* An authenticated user views profile data, statistics, match history, or the leaderboard.
+*Trigger:* The user navigates to one of these views.
+*Endpoint(s):* `GET /api/profile/:uid`, `GET /api/statistics/:uid`, `GET /api/history/:uid/:page/:limit`, and `GET /api/leaderboard/:category/:metric`.
+
+[plantuml, statistics-runtime, png]
+----
+@startuml
+autonumber
+actor Player
+participant "React Webapp" as Webapp
+participant "REST API" as API
+database SQLite
+
+Player -> Webapp : Open statistics or leaderboard
+Webapp -> API : GET request with Bearer JWT
+API -> API : Verify JWT
+API -> SQLite : Retrieve requested data
+SQLite --> API : User and game data
+API --> Webapp : JSON response
+Webapp -> Player : Display results
+@enduml
+----

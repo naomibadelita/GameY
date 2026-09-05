@@ -1,0 +1,114 @@
+== Quality Requirements
+
+=== Quality Tree
+
+[cols="1,2,2", options="header"]
+|===
+| Quality Category | Sub-quality | Related Scenario(s)
+
+| **Security**
+| Authentication and password protection
+| QS-01, QS-02
+
+| **Responsiveness**
+| Timely multiplayer updates
+| QS-03
+
+| **Usability**
+| Clear gameplay and navigation
+| QS-04
+
+| **Reliability**
+| Handling connection loss and invalid input
+| QS-05, QS-06
+
+| **Maintainability**
+| Testability and modularity
+| QS-07
+|===
+
+=== Quality Scenarios
+
+==== QS-01: Protected REST endpoints reject requests without a valid JWT
+
+[cols="1,3"]
+|===
+| Source | Unauthenticated user
+| Stimulus | Requests profile, statistics, history, leaderboard, or game data without a valid JWT
+| Environment | Any environment
+| Artifact | REST API authentication middleware
+| Response | The request is rejected with HTTP 401 when no token is sent, or HTTP 403 when the token is invalid
+| Response Measure | Protected endpoints do not return protected data without a valid JWT
+|===
+
+==== QS-02: Passwords are not stored in plaintext
+
+[cols="1,3"]
+|===
+| Source | Developer or database administrator
+| Stimulus | Inspects user records in the SQLite database
+| Environment | Any environment containing registered users
+| Artifact | Registration and authentication logic
+| Response | The database contains a bcrypt password hash instead of the user's plaintext password
+| Response Measure | User passwords are hashed before insertion into SQLite
+|===
+
+==== QS-03: Connected players receive game updates after a move
+
+[cols="1,3"]
+|===
+| Source | Player in an active multiplayer match
+| Stimulus | The player makes a valid move
+| Environment | Two connected players in the same game room
+| Artifact | WebSocket server and game manager
+| Response | The backend updates the board and sends the new game state to both players through WebSocket messages
+| Response Measure | Both connected webapps render the same updated board state
+|===
+
+==== QS-04: Users can start and play a game through the web interface
+
+[cols="1,3"]
+|===
+| Source | Registered player
+| Stimulus | Logs in, selects a board size, joins a lobby or private room, and selects a board cell
+| Environment | Supported web browser with a working backend connection
+| Artifact | React webapp
+| Response | The interface guides the player through authentication, game setup, and move submission
+| Response Measure | The player can reach an active game and submit a valid move using the visible interface
+|===
+
+==== QS-05: The application handles a lost WebSocket connection
+
+[cols="1,3"]
+|===
+| Source | Network failure or backend interruption
+| Stimulus | The player's WebSocket connection closes during a game
+| Environment | Active multiplayer game
+| Artifact | Game socket service and game manager
+| Response | The webapp detects the connection loss and returns the player to the main menu; the remaining player is notified when an opponent disconnects
+| Response Measure | The user receives an error message instead of continuing with an invalid game state
+|===
+
+==== QS-06: Invalid moves do not change the board state
+
+[cols="1,3"]
+|===
+| Source | Player in an active match
+| Stimulus | Attempts to play outside their turn or on an occupied cell
+| Environment | Active multiplayer game
+| Artifact | Game manager and board logic
+| Response | The backend ignores the invalid move and does not broadcast a changed board state
+| Response Measure | The existing board state and current player remain unchanged
+|===
+
+==== QS-07: Core game behavior is automatically tested
+
+[cols="1,3"]
+|===
+| Source | Development team
+| Stimulus | A change is pushed to the `main` branch or submitted in a pull request
+| Environment | GitHub Actions continuous-integration workflow
+| Artifact | Vitest test suite
+| Response | Automated tests for board behavior and lobby matchmaking run and report success or failure
+| Response Measure | The CI workflow fails when the test suite fails
+|===

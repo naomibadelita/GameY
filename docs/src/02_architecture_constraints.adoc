@@ -1,0 +1,13 @@
+== Constraints
+
+=== Technical Constraints
+Technical constraints define the specific technologies and tools that must be used.
+
+[cols="1,2"]
+|===
+|Constraint |Description
+|**Programming Languages**
+|Frontend must be written in React with Typescript. The backend must be written in TypeScript and JavaScript.
+|**Data Exchange**
+|All subsystem communication must use JSON formatted.
+|===

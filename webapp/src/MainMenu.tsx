@@ -35,6 +35,14 @@ export default function MainMenu() {
           <button
             type="button"
             className="menu-btn primary-btn"
+            onClick={actions.startBotGame}
+          >
+            Play vs Bot
+          </button>
+
+          <button
+            type="button"
+            className="menu-btn primary-btn"
             onClick={actions.viewLeaderboard}
           >
             View Leaderboard

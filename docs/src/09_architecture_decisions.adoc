@@ -1,0 +1,67 @@
+== Architecture Decisions
+
+This section records the main architectural decisions made for Game Y. Each decision explains the selected approach and its consequences.
+
+=== ADR: React and TypeScript for the Webapp
+
+Game Y requires a browser-based interface for authentication, game setup, multiplayer gameplay, statistics, and leaderboards.
+
+We chose React with TypeScript and Vite for the webapp. React supports a component-based interface, while TypeScript helps detect errors during development. The webapp communicates with the backend through REST requests and WebSocket messages.
+
+The main consequence is that the project requires Node.js tooling to build the frontend.
+
+=== ADR: Node.js and Express for the Backend
+
+The application needs a backend that can serve the webapp, provide REST endpoints, and support real-time multiplayer communication.
+
+We chose Node.js with Express. The backend runs on port `8080`, serves the built React application, and exposes REST API endpoints under `/api`.
+
+This keeps the application simple because the frontend and backend use closely related JavaScript and TypeScript technologies.
+
+=== ADR: WebSockets for Real-Time Multiplayer Gameplay
+
+Players need to receive game updates immediately when an opponent joins, makes a move, requests a rematch, or disconnects.
+
+We chose WebSockets through the `ws` library. The webapp connects to `/ws` and exchanges JSON messages with the backend game manager.
+
+WebSockets avoid repeated HTTP polling and provide low-latency game updates. Active rooms are stored in backend memory, so unfinished games are lost if the server restarts.
+
+=== ADR: SQLite for Persistent Data
+
+Game Y needs persistent storage for user accounts, completed games, match history, player statistics, and Elo ratings.
+
+We chose SQLite. It is a lightweight relational database that is easy to run locally without a separate database server.
+
+SQLite simplifies development and deployment for a small application. The database file must be stored on persistent server storage in production.
+
+=== ADR: JWT Authentication
+
+Protected API endpoints need to identify the requesting user.
+
+We chose JSON Web Tokens (JWTs). After registration or login, the backend returns a signed JWT. The webapp stores the token in `localStorage` and sends it as a Bearer token with protected REST requests.
+
+JWTs allow the API to authenticate requests without server-side session storage. The `JWT_SECRET` must be configured securely in production.
+
+=== ADR: bcryptjs for Password Protection
+
+User passwords must not be stored in plaintext.
+
+We chose `bcryptjs` to hash passwords when users register and to verify passwords when they log in. Only the password hash is stored in SQLite.
+
+This protects credentials if the database is exposed. Password hashing adds a small processing cost during registration and login.
+
+=== ADR: JSON for Client-Server Data Exchange
+
+The React webapp and Node.js backend need a consistent exchange format.
+
+We chose JSON for REST request and response bodies and for WebSocket messages. JSON is supported directly by both the browser and Node.js.
+
+This makes messages easy to inspect and extend, but message fields must remain consistent between the frontend and backend.
+
+=== ADR: Vitest and GitHub Actions for Automated Testing
+
+The application needs automated checks for core game behavior.
+
+We chose Vitest for unit tests covering board logic and lobby matchmaking. GitHub Actions runs the test suite for pushes to `main` and for pull requests.
+
+This provides basic regression protection. Browser-based end-to-end and load testing are not currently implemented.
