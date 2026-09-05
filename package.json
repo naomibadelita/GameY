@@ -1,9 +1,13 @@
 {
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.10",
+    "@types/node": "^26.1.1",
+    "tsx": "^4.23.13",
     "vitest": "^4.1.10"
   },
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "train:bot": "tsx training/train.ts",
+    "dev": "npm --prefix server run dev"
   }
 }

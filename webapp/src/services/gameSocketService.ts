@@ -32,6 +32,7 @@ export interface ServerMessage {
     requesterDisplayName?: string;
     roomId?: string | null;
     boardSize?: number;
+    difficulty?: 'easy' | 'medium' | 'hard' | 'adaptive';
 }
 
 function characterToCell(c: string): CellValue {
@@ -154,12 +155,18 @@ export class GameSocketService {
         });
     }
 
-    public createBotGame(boardSize: number, userId: string | null, displayName: string): void {
+    public createBotGame(
+        boardSize: number,
+        userId: string | null,
+        displayName: string,
+        difficulty: 'easy' | 'medium' | 'hard' | 'adaptive' = 'medium',
+    ): void {
         this.sendMessage({
             type: 'create_bot_game',
             boardSize,
             userId,
             displayName,
+            difficulty,
         });
     }
 

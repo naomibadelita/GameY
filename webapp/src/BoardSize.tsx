@@ -10,6 +10,21 @@ export default function BoardSize() {
             <h1 className="board-title">Game Y</h1>
             <p className="board-size">Choose Board Size</p>
 
+            {state.botGame ? (
+              <label className="difficulty-control">
+                <span>Difficulty</span>
+                <select
+                  value={state.difficulty}
+                  onChange={(event) => actions.setDifficulty(event.target.value as typeof state.difficulty)}
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                  <option value="adaptive">Adaptive</option>
+                </select>
+              </label>
+            ) : null}
+
             <div className="board-size-options">
             {state.availableSizes.map((size) => (
                 <button

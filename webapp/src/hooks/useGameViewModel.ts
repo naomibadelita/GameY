@@ -65,7 +65,12 @@ export function useGameViewModel() {
     const setConnectionLost = useSetAtom(connectionLostAtom);
 
     // Computed board dimensions
-    const rawBoardSize = (location.state as { boardSize?: number | string } | null)?.boardSize ?? 8;
+    const routeState = location.state as {
+        boardSize?: number | string;
+        difficulty?: 'easy' | 'medium' | 'hard' | 'adaptive';
+    } | null;
+    const rawBoardSize = routeState?.boardSize ?? 8;
+    const difficulty = routeState?.difficulty ?? 'medium';
     const selectedBoardSize = Number(rawBoardSize);
     const safeBoardSize = Number.isFinite(selectedBoardSize) && selectedBoardSize > 1 ? selectedBoardSize : 8;
     const isBotGame = gameId === 'bot';
@@ -138,7 +143,7 @@ export function useGameViewModel() {
         const displayName = user?.displayName ?? 'Guest';
 
         if (isBotGame) {
-            gameSocketService.createBotGame(activeBoardSize, userId, displayName);
+            gameSocketService.createBotGame(activeBoardSize, userId, displayName, difficulty);
         } else if (gameId === 'new') {
             gameSocketService.createPrivateRoom(activeBoardSize, userId, displayName);
         } else if (isPrivateGame && gameId) {
@@ -150,6 +155,7 @@ export function useGameViewModel() {
         gameId,
         isBotGame,
         activeBoardSize,
+        difficulty,
         user,
         isLoading,
         setBoard,

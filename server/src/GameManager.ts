@@ -4,6 +4,14 @@ import { Board, MoveResult } from '../../gamey/Board';
 import { ISubscriber } from './Interfaces';
 import { type CellValue } from "../../shared/CellValue";
 import { GameBot } from '../../gamey/GameBot';
+import { defaultBotModel, type BotModel } from '../../gamey/BotModel';
+import { RandomBot } from '../../gamey/RandomBot';
+import { SearchBot } from '../../gamey/SearchBot';
+import type { BotDifficulty, MoveStrategy } from '../../gamey/MoveStrategy';
+import type { Experience } from '../../training/Experience';
+import { appendExperience } from '../../training/ExperienceStore';
+import type { QModel } from '../../training/QModel';
+import { calculateMoveReward } from '../../training/Reward';
 
 class PlayerData {
     ws: WebSocket;
@@ -31,11 +39,21 @@ type RoomState = {
     players: PlayerData[];
     rematchPlayers: Set<WebSocket>;
     isBotGame: boolean;
+    botDifficulty?: BotDifficulty;
+    botExperiences?: Experience[];
     winner: 'R' | 'B' | '.';
 };
 
+type MoveMessage = {
+    x: number;
+    y: number;
+    color: CellValue;
+};
+
 export class GameManager implements ISubscriber {
-    private readonly bot = new GameBot();
+    private readonly bot: GameBot;
+    private readonly randomBot = new RandomBot();
+    private readonly searchBot = new SearchBot();
 
     board: Board;
     boardSize: number;
@@ -45,9 +63,10 @@ export class GameManager implements ISubscriber {
     connectedPlayers: PlayerData[] = [];
     rooms: Map<string, RoomState> = new Map();
 
-    constructor(size: number) {
+    constructor(size: number, botModel: BotModel = defaultBotModel, qModel?: QModel) {
         this.board = new Board(size);
         this.boardSize = size;
+        this.bot = new GameBot(botModel, qModel);
     }
 
     private serializeBoard(board: Board): string {
@@ -143,16 +162,78 @@ export class GameManager implements ISubscriber {
         );
     }
 
-    private async onMove(room: RoomState, data: any) {
-        if (
-            room.winner !== '.' ||
-            !Number.isInteger(data.x) ||
-            !Number.isInteger(data.y) ||
-            data.y < 0 ||
-            data.y >= room.board.rows.length ||
-            data.x < 0 ||
-            data.x > data.y
-        ) {
+    private isValidMove(room: RoomState, data: MoveMessage): boolean {
+        return room.winner === '.' &&
+            Number.isInteger(data.x) &&
+            Number.isInteger(data.y) &&
+            data.y >= 0 &&
+            data.y < room.board.rows.length &&
+            data.x >= 0 &&
+            data.x <= data.y;
+    }
+
+    private completePendingBotExperience(room: RoomState, winner: 'R' | 'B' | '.'): void {
+        const pendingExperience = room.botExperiences?.at(-1);
+        if (!pendingExperience) {
+            return;
+        }
+
+        pendingExperience.nextBoard = this.serializeBoard(room.board);
+        pendingExperience.terminal = winner === 'B';
+        if (winner === 'B') pendingExperience.reward = -1;
+    }
+
+    private playBotMove(room: RoomState): 'R' | '.' {
+        const boardSnapshot = this.copyBoard(room.board);
+        const boardBeforeBotMove = this.serializeBoard(room.board);
+        const botMove = this.getBotStrategy(room).chooseMove(room.board, 'R', 'B');
+        if (botMove === null) {
+            room.currentPlayer = 'B';
+            return '.';
+        }
+
+        const botResult = room.board.placePiece(botMove.row, botMove.column, 'R');
+        room.botExperiences ??= [];
+        room.botExperiences.push({
+            board: boardBeforeBotMove,
+            boardSize: room.boardSize,
+            botColor: 'R',
+            move: botMove,
+            reward: botResult === MoveResult.VICTORY
+                ? 1
+                : calculateMoveReward(boardSnapshot, room.board, botMove, 'R', 'B'),
+            nextBoard: botResult === MoveResult.VICTORY ? this.serializeBoard(room.board) : '',
+            terminal: botResult === MoveResult.VICTORY,
+        });
+        room.currentPlayer = 'B';
+        return botResult === MoveResult.VICTORY ? 'R' : '.';
+    }
+
+    private persistBotExperiences(room: RoomState, winner: 'R' | 'B'): void {
+        const experiences = room.botExperiences;
+        room.botExperiences = [];
+        experiences?.forEach((experience) => {
+            void appendExperience({
+                ...experience,
+            }).catch((error: unknown) => {
+                console.error('Failed to save bot experience:', error);
+            });
+        });
+    }
+
+    private copyBoard(board: Board): Board {
+        const copy = new Board(board.size);
+        for (let row = 0; row < board.size; row++) {
+            for (let column = 0; column <= row; column++) {
+                const color = board.rows[row][column].color;
+                if (color !== '.') copy.placePiece(row, column, color);
+            }
+        }
+        return copy;
+    }
+
+    private async onMove(room: RoomState, data: MoveMessage) {
+        if (!this.isValidMove(room, data)) {
             return;
         }
 
@@ -165,28 +246,17 @@ export class GameManager implements ISubscriber {
         let winner: 'R' | 'B' | '.' =
             result === MoveResult.VICTORY ? data.color : '.';
 
+        if (room.isBotGame) this.completePendingBotExperience(room, winner);
+
         if (room.isBotGame && winner === '.') {
-            const botMove = this.bot.chooseMove(room.board, 'R', 'B');
-
-            if (botMove !== null) {
-                const botResult = room.board.placePiece(
-                    botMove.row,
-                    botMove.column,
-                    'R',
-                );
-
-                if (botResult === MoveResult.VICTORY) {
-                    winner = 'R';
-                }
-            }
-
-            room.currentPlayer = 'B';
+            winner = this.playBotMove(room);
         } else if (!room.isBotGame) {
             this.changeCurrentPlayer(room);
         }
 
         if (winner !== '.') {
             room.winner = winner;
+            if (room.isBotGame) this.persistBotExperiences(room, winner);
             void this.onWin(room, winner).catch((error) => {
                 console.error('Failed to save finished game:', error);
             });
@@ -198,6 +268,40 @@ export class GameManager implements ISubscriber {
             isP1Turn: room.currentPlayer === 'B',
             winner,
         });
+    }
+
+    private getBotStrategy(room: RoomState): MoveStrategy {
+        switch (room.botDifficulty) {
+            case 'easy': return this.randomBot;
+            case 'hard': return this.searchBot;
+            case 'adaptive': return this.getAdaptiveStrategy(room);
+            default: return this.bot;
+        }
+    }
+
+    private getAdaptiveStrategy(room: RoomState): MoveStrategy {
+        const playerNodes = room.board.rows.flat()
+            .filter((node) => node.color === 'B');
+        const strongestConnection = Math.max(
+            0,
+            ...playerNodes.map((node) => node.sides.size),
+        );
+        const strongestCluster = Math.max(
+            0,
+            ...playerNodes.map((node) =>
+                node.neighbors.filter((neighbor) => neighbor.color === 'B').length,
+            ),
+        );
+
+        if (strongestConnection >= 2 || strongestCluster >= 2) {
+            return this.searchBot;
+        }
+
+        if (playerNodes.length <= 2 && strongestCluster === 0) {
+            return this.randomBot;
+        }
+
+        return this.bot;
     }
 
     private matchPlayers(playerA: PlayerData, playerB: PlayerData) {
@@ -270,6 +374,7 @@ export class GameManager implements ISubscriber {
                     ? null
                     : opponent?.userId,
                 boardSize: room.boardSize,
+                difficulty: room.isBotGame ? room.botDifficulty : undefined,
                 roomId: room.id,
             }));
 
@@ -317,6 +422,7 @@ export class GameManager implements ISubscriber {
         requestedSize: number,
         userId: string | null,
         displayName: string | null,
+        difficulty: BotDifficulty,
     ) {
         const player = this.getConnectedPlayer(ws);
 
@@ -338,6 +444,8 @@ export class GameManager implements ISubscriber {
             players: [player],
             rematchPlayers: new Set(),
             isBotGame: true,
+            botDifficulty: difficulty,
+            botExperiences: [],
             winner: '.',
         };
 
@@ -501,6 +609,11 @@ export class GameManager implements ISubscriber {
             requestedSize,
             message.userId ?? null,
             message.displayName ?? null,
+            message.difficulty === 'easy' ||
+            message.difficulty === 'hard' ||
+            message.difficulty === 'adaptive'
+                ? message.difficulty
+                : 'medium',
         );
     }
 }
@@ -548,9 +661,19 @@ export class GameManager implements ISubscriber {
             return;
         }
 
-        const player = room.players.find((roomPlayer) => roomPlayer.ws === ws);
-        if (message.type === 'move' && player?.color === message.color && room.currentPlayer === message.color) {
-            this.onMove(room, message);
+        const playerColor = room.players.find((roomPlayer) => roomPlayer.ws === ws)?.color;
+        if (
+            message.type === 'move' &&
+            playerColor !== undefined &&
+            room.currentPlayer === playerColor &&
+            Number.isInteger(message.x) &&
+            Number.isInteger(message.y)
+        ) {
+            this.onMove(room, {
+                x: message.x,
+                y: message.y,
+                color: playerColor,
+            });
         }
     }
 

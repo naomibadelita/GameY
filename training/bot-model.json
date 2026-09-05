@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "adjacentOwnPiece": 10,
+  "reachNewSide": 20,
+  "connectGroups": 30,
+  "isolatedPiecePenalty": 15
+}
